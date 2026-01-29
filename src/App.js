@@ -7,11 +7,19 @@ import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, 
 import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, updateDoc } from 'firebase/firestore';
 
 // --- Firebase Initialization ---
-const firebaseConfig = JSON.parse(__firebase_config || '{}');
+const firebaseConfig = {
+  apiKey: "AIzaSyDUDrq1dDE3sIlnXRLm6Z5pToyXGJYe1kQ",
+  authDomain: "flow-detective-proj.firebaseapp.com",
+  projectId: "flow-detective-proj",
+  storageBucket: "flow-detective-proj.firebasestorage.app",
+  messagingSenderId: "453598403249",
+  appId: "1:453598403249:web:460f30fc369189c2586090",
+  measurementId: "G-DZVMHFFDK8"
+};
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'flow-detective-default';
+const appId = 'flow-detective-public'; // 
 
 const FlowDetective = () => {
   const [activeTab, setActiveTab] = useState('log');
@@ -64,12 +72,8 @@ const FlowDetective = () => {
   // --- Auth & Data Flow (Firebase) ---
   useEffect(() => {
     const initAuth = async () => {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        await signInWithCustomToken(auth, __initial_auth_token);
-      } else {
-        if (!auth.currentUser) {
-           await signInAnonymously(auth);
-        }
+      if (!auth.currentUser) {
+         await signInAnonymously(auth);
       }
     };
     initAuth();
