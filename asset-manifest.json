@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/FlowDetective/static/css/main.e6c13ad2.css",
+    "main.js": "/FlowDetective/static/js/main.542acaca.js",
+    "static/js/453.af7f77cc.chunk.js": "/FlowDetective/static/js/453.af7f77cc.chunk.js",
+    "index.html": "/FlowDetective/index.html",
+    "main.e6c13ad2.css.map": "/FlowDetective/static/css/main.e6c13ad2.css.map",
+    "main.542acaca.js.map": "/FlowDetective/static/js/main.542acaca.js.map",
+    "453.af7f77cc.chunk.js.map": "/FlowDetective/static/js/453.af7f77cc.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.e6c13ad2.css",
+    "static/js/main.542acaca.js"
+  ]
+}
