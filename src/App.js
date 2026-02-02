@@ -896,21 +896,17 @@ const FlowDetective = () => {
 
   // Auth & Sync
   useEffect(() => {
-    const init = async () => {
-      // Direct hardcoded auth logic
-      if (!auth.currentUser) { 
-        try { 
-          await signInAnonymously(auth); 
-        } catch(e) { 
-          console.error("Auth Error:", e);
-          setAuthGlobalError(`Auth Failed: ${e.code || e.message || 'Unknown Error'}`); 
-        } 
-      }
-    };
-    init();
     return onAuthStateChanged(auth, (u) => {
-        if (u) setAuthGlobalError(null); // Clear error on success
+      if (u) {
+        setAuthGlobalError(null);
         setUser(u);
+      } else {
+        // Only sign in anonymously if explicitly no user
+        signInAnonymously(auth).catch(e => {
+          console.error("Auth Error:", e);
+          setAuthGlobalError(`Auth Failed: ${e.code || e.message || 'Unknown Error'}`);
+        });
+      }
     });
   }, []);
 
@@ -1163,7 +1159,7 @@ const FlowDetective = () => {
       {showProfile && <ProfileModal user={user} logs={logs} onClose={()=>setShowProfile(false)} onLinkGoogle={handleLinkGoogle} onEmailAuth={handleEmailAuth} onSignOut={handleSignOut} authError={authError} setAuthError={setAuthError} isCloudMode={isCloudMode} onImportCSV={handleImportCSV} t={t} />}
       
       <div className="bg-slate-900 p-6 pt-10 rounded-b-3xl shadow-xl relative z-10 text-white flex justify-between items-center">
-        <div><h1 className="text-xl font-bold">Flow Detective 32.0</h1><p className="text-[10px] text-slate-400">Holographic</p></div>
+        <div><h1 className="text-xl font-bold">Flow Detective 32.1</h1><p className="text-[10px] text-slate-400">Holographic</p></div>
         <div className="flex gap-2 items-center">
            {!isCloudMode && <span className="text-[9px] bg-orange-500/20 text-orange-200 px-2 py-0.5 rounded border border-orange-500/30">{t('localDemoTag')}</span>}
            <button onClick={toggleLang} className="p-2 rounded-full bg-slate-800 ring-1 ring-slate-600 flex items-center justify-center transition-colors">
