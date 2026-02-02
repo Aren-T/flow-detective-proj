@@ -849,6 +849,7 @@ const FlowDetective = () => {
   const [filterTags, setFilterTags] = useState([]);
   const [showProfile, setShowProfile] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState('');
   const [isLoadingLogs, setIsLoadingLogs] = useState(true);
   const [authGlobalError, setAuthGlobalError] = useState(null);
@@ -975,6 +976,7 @@ const FlowDetective = () => {
 
   const handleLog = async () => {
     if (!currentActivity.trim() || !user) return;
+    setIsSubmitting(true);
     const deepData = {
       skillHard, skillEnergy, supportLevel,
       challengeComplex, challengeUrgency, challengeInternal, challengeExternal,
@@ -1045,7 +1047,9 @@ const FlowDetective = () => {
         if (logMode === 'plan') setActiveTab('todo');
       }
       resetForm(); setShowSuccess(true); setTimeout(() => setShowSuccess(false), 2000);
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); } finally {
+      setIsSubmitting(false);
+    }
   };
   
   // CSV Parsing Engine (Restored from v26.1)
@@ -1241,7 +1245,9 @@ const FlowDetective = () => {
                 <div className="flex gap-2 items-center"><finalFlowState.icon size={16} className={finalFlowState.color} /><span className={`font-bold ${finalFlowState.color}`}>{t('state' + finalFlowState.id)}</span></div>
                 <div className="flex gap-2 items-center"><span className={`font-bold ${finalActionState.isActionable ? 'text-green-600' : 'text-gray-500'}`}>{finalActionState.label}</span>{!isCalibrating && logMode !== 'plan' && <button onClick={() => setIsCalibrating(true)} className="text-[9px] underline">{t('correction')}</button>}{isCalibrating && <div className="flex gap-1"><button onClick={() => setManualFlowState(FLOW_STATES.ANXIETY)} className="p-1 bg-red-100 rounded text-red-600"><Activity size={10}/></button><button onClick={() => setManualFlowState(FLOW_STATES.FLOW)} className="p-1 bg-green-100 rounded text-green-600"><Zap size={10}/></button><button onClick={() => setManualFlowState(FLOW_STATES.BOREDOM)} className="p-1 bg-yellow-100 rounded text-yellow-600"><Coffee size={10}/></button></div>}</div>
              </div>
-             <button onClick={handleLog} disabled={!currentActivity} className="w-full mt-4 bg-slate-800 text-white py-3 rounded-xl text-sm font-bold">{showSuccess ? t('saved') : (logMode === 'plan' ? t('addToTodo') : t('recordCase'))}</button>
+             <button onClick={handleLog} disabled={!currentActivity || isSubmitting} className="w-full mt-4 bg-slate-800 text-white py-3 rounded-xl text-sm font-bold flex justify-center items-center gap-2">
+                {isSubmitting ? <Loader2 className="animate-spin" size={20}/> : (showSuccess ? t('saved') : (logMode === 'plan' ? t('addToTodo') : t('recordCase')))}
+             </button>
           </div>
         )}
 
