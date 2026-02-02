@@ -897,10 +897,20 @@ const FlowDetective = () => {
   useEffect(() => {
     const init = async () => {
       // Direct hardcoded auth logic
-      if (!auth.currentUser) { try { await signInAnonymously(auth); } catch(e) { setAuthGlobalError("Auth Failed"); } }
+      if (!auth.currentUser) { 
+        try { 
+          await signInAnonymously(auth); 
+        } catch(e) { 
+          console.error("Auth Error:", e);
+          setAuthGlobalError(`Auth Failed: ${e.code || e.message || 'Unknown Error'}`); 
+        } 
+      }
     };
     init();
-    return onAuthStateChanged(auth, setUser);
+    return onAuthStateChanged(auth, (u) => {
+        if (u) setAuthGlobalError(null); // Clear error on success
+        setUser(u);
+    });
   }, []);
 
   useEffect(() => {
@@ -1128,7 +1138,21 @@ const FlowDetective = () => {
   const handleEmailAuth = async (email, pw, isLogin) => { try { if(isLogin) await signInWithEmailAndPassword(auth, email, pw); else await linkWithCredential(user, EmailAuthProvider.credential(email, pw)); } catch(e) { setAuthError(e.message); } };
   const handleSignOut = async () => { await signOut(auth); if (isCloudMode) await signInAnonymously(auth); };
 
-  if (authGlobalError) return <div className="p-10 text-center text-red-500">{authGlobalError}</div>;
+  if (authGlobalError) return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-red-50">
+      <AlertCircle size={48} className="text-red-500 mb-4" />
+      <h2 className="text-lg font-bold text-red-700 mb-2">连接中止 (Connection Terminated)</h2>
+      <p className="text-sm text-red-600 font-mono bg-red-100 p-3 rounded break-all">{authGlobalError}</p>
+      <div className="mt-6 text-xs text-gray-500 max-w-xs text-left space-y-2">
+        <p><strong>可能原因 / Possible Causes:</strong></p>
+        <ul className="list-disc pl-4 space-y-1">
+           <li>域名未授权 (Domain not authorized in Firebase Console)</li>
+           <li>网络连接问题 (Network issue)</li>
+           <li>API Key 限制 (API Key restriction)</li>
+        </ul>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 text-gray-800 font-sans pb-24 max-w-md mx-auto border-x border-gray-200 shadow-2xl relative overflow-x-hidden">
