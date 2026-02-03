@@ -971,8 +971,16 @@ const FlowDetective = () => {
   }, []);
 
   const handleLog = async () => {
-    if (!currentActivity.trim() || !user) return;
+    if (!currentActivity.trim()) return;
+    if (!user) {
+      alert(t('unknown') + ": No User. " + (authGlobalError || "Check connection/domain."));
+      return;
+    }
     setIsSubmitting(true);
+
+    // Failsafe: Stop spinner after 10s if something hangs
+    const timeoutId = setTimeout(() => setIsSubmitting(false), 10000);
+
     const deepData = {
       skillHard, skillEnergy, supportLevel,
       challengeComplex, challengeUrgency, challengeInternal, challengeExternal,
@@ -1043,7 +1051,11 @@ const FlowDetective = () => {
         if (logMode === 'plan') setActiveTab('todo');
       }
       resetForm(); setShowSuccess(true); setTimeout(() => setShowSuccess(false), 2000);
-    } catch (e) { console.error(e); } finally {
+    } catch (e) {
+      console.error(e);
+      alert("Save Failed: " + e.message);
+    } finally {
+      clearTimeout(timeoutId);
       setIsSubmitting(false);
     }
   };
@@ -1159,7 +1171,7 @@ const FlowDetective = () => {
       {showProfile && <ProfileModal user={user} logs={logs} onClose={()=>setShowProfile(false)} onLinkGoogle={handleLinkGoogle} onEmailAuth={handleEmailAuth} onSignOut={handleSignOut} authError={authError} setAuthError={setAuthError} isCloudMode={isCloudMode} onImportCSV={handleImportCSV} t={t} />}
       
       <div className="bg-slate-900 p-6 pt-10 rounded-b-3xl shadow-xl relative z-10 text-white flex justify-between items-center">
-        <div><h1 className="text-xl font-bold">Flow Detective 32.1</h1><p className="text-[10px] text-slate-400">Holographic</p></div>
+        <div><h1 className="text-xl font-bold">Flow Detective 32.2</h1><p className="text-[10px] text-slate-400">Holographic</p></div>
         <div className="flex gap-2 items-center">
            {!isCloudMode && <span className="text-[9px] bg-orange-500/20 text-orange-200 px-2 py-0.5 rounded border border-orange-500/30">{t('localDemoTag')}</span>}
            <button onClick={toggleLang} className="p-2 rounded-full bg-slate-800 ring-1 ring-slate-600 flex items-center justify-center transition-colors">
@@ -1257,6 +1269,12 @@ const FlowDetective = () => {
          <button onClick={()=>setActiveTab('todo')}><ListTodo /></button>
          <button onClick={()=>setActiveTab('stats')}><BarChart2 /></button>
          <button onClick={()=>setActiveTab('history')}><History /></button>
+      </div>
+
+      {/* Debug Footer */}
+      <div className="fixed bottom-16 left-0 right-0 text-[8px] text-gray-300 text-center pointer-events-none z-40">
+        UID: {user ? user.uid.slice(0,6)+'...' : 'No User'} | Ver: 32.2
+        {authGlobalError && <div className="text-red-400 bg-white/90 p-1">{authGlobalError}</div>}
       </div>
     </div>
   );
