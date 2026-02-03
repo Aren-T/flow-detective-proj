@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/flow-detective-proj/static/css/main.1d4b68c2.css",
-    "main.js": "/flow-detective-proj/static/js/main.95c9315a.js",
+    "main.js": "/flow-detective-proj/static/js/main.f625b6a2.js",
     "static/js/453.af7f77cc.chunk.js": "/flow-detective-proj/static/js/453.af7f77cc.chunk.js",
     "index.html": "/flow-detective-proj/index.html",
     "main.1d4b68c2.css.map": "/flow-detective-proj/static/css/main.1d4b68c2.css.map",
-    "main.95c9315a.js.map": "/flow-detective-proj/static/js/main.95c9315a.js.map",
+    "main.f625b6a2.js.map": "/flow-detective-proj/static/js/main.f625b6a2.js.map",
     "453.af7f77cc.chunk.js.map": "/flow-detective-proj/static/js/453.af7f77cc.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.1d4b68c2.css",
-    "static/js/main.95c9315a.js"
+    "static/js/main.f625b6a2.js"
   ]
 }
