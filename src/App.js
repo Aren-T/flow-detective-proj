@@ -3,7 +3,7 @@ import { Plus, BarChart2, History, Brain, Zap, Coffee, Frown, Activity, Trash2, 
 
 // Firebase Imports
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut, GoogleAuthProvider, linkWithPopup, signInWithPopup, EmailAuthProvider, linkWithCredential, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut, GoogleAuthProvider, linkWithPopup, signInWithPopup, EmailAuthProvider, linkWithCredential, signInWithEmailAndPassword, createUserWithEmailAndPassword, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, updateDoc, writeBatch } from 'firebase/firestore';
 
 // --- Translations ---
@@ -100,7 +100,7 @@ const TRANSLATIONS = {
     addToTodo: "加入待办",
     recordCase: "记录案卷",
     localDemoTag: "Local Demo",
-    
+
     // States
     stateFLOW: "心流 (Flow)",
     stateANXIETY: "焦虑 (Anxiety)",
@@ -220,28 +220,28 @@ const safeRender = (val) => {
 
 // --- Data Sanitizer (Layered Architecture) ---
 const sanitizeLog = (docId, data) => {
-  const safeNum = (v, def=5) => (typeof v === 'number' && !isNaN(v) ? v : (Number(v) || def));
+  const safeNum = (v, def = 5) => (typeof v === 'number' && !isNaN(v) ? v : (Number(v) || def));
   const safeStr = (v) => (typeof v === 'string' ? v : '');
-  
+
   let tags = [];
   if (Array.isArray(data.tags)) tags = data.tags.map(String);
-  else if (typeof data.tags === 'string' && data.tags.includes(';')) tags = data.tags.split(';').map(t=>t.trim());
+  else if (typeof data.tags === 'string' && data.tags.includes(';')) tags = data.tags.split(';').map(t => t.trim());
   else if (typeof data.tags === 'string') tags = [data.tags];
 
   // State Recovery
   let flowState = data.flowState;
   if (!flowState || !flowState.id || typeof flowState === 'string' || flowState.name === 'Imported') {
-     const name = typeof flowState === 'string' ? flowState : (data.flowStateName || safeStr(data.flowState?.name));
-     const match = Object.values(FLOW_STATES).find(s => name.includes(s.name) || name.includes(s.id));
-     if (match) flowState = { ...match, icon: null };
-     else flowState = { id: 'UNKNOWN', name: name || '未知', color: 'text-gray-400' };
+    const name = typeof flowState === 'string' ? flowState : (data.flowStateName || safeStr(data.flowState?.name));
+    const match = Object.values(FLOW_STATES).find(s => name.includes(s.name) || name.includes(s.id));
+    if (match) flowState = { ...match, icon: null };
+    else flowState = { id: 'UNKNOWN', name: name || '未知', color: 'text-gray-400' };
   }
 
   // --- Layer 1: Predicted / Initial (From Plan) ---
   const initC = safeNum(data.challenge);
   const initS = safeNum(data.skill);
   const initM = safeNum(data.motivation);
-  
+
   // --- Layer 2: Actual / Executed (From Completion) ---
   const actC = data.actualChallenge !== undefined ? safeNum(data.actualChallenge) : initC;
   const actS = data.actualSkill !== undefined ? safeNum(data.actualSkill) : initS;
@@ -250,26 +250,26 @@ const sanitizeLog = (docId, data) => {
   // --- Layer 3: Sub-dimensions (Split into Initial vs Actual) ---
   const sub = {
     // Initial / Predicted (Must be preserved)
-    skillHard: safeNum(data.skillHard), 
-    skillEnergy: safeNum(data.skillEnergy), 
+    skillHard: safeNum(data.skillHard),
+    skillEnergy: safeNum(data.skillEnergy),
     supportLevel: safeNum(data.supportLevel),
-    challengeComplex: safeNum(data.challengeComplex), 
-    challengeUrgency: safeNum(data.challengeUrgency), 
-    challengeInternal: safeNum(data.challengeInternal), 
+    challengeComplex: safeNum(data.challengeComplex),
+    challengeUrgency: safeNum(data.challengeUrgency),
+    challengeInternal: safeNum(data.challengeInternal),
     challengeExternal: safeNum(data.challengeExternal),
-    motivationIntrinsic: safeNum(data.motivationIntrinsic), 
+    motivationIntrinsic: safeNum(data.motivationIntrinsic),
     motivationExtrinsic: safeNum(data.motivationExtrinsic),
-    
+
     // Actuals (Fallback to Initial if not present)
     actualSkillHard: safeNum(data.actualSkillHard !== undefined ? data.actualSkillHard : data.skillHard),
     actualSkillEnergy: safeNum(data.actualSkillEnergy !== undefined ? data.actualSkillEnergy : data.skillEnergy),
     actualSupportLevel: safeNum(data.actualSupportLevel !== undefined ? data.actualSupportLevel : data.supportLevel),
-    
+
     actualChallengeComplex: safeNum(data.actualChallengeComplex !== undefined ? data.actualChallengeComplex : data.challengeComplex),
     actualChallengeUrgency: safeNum(data.actualChallengeUrgency !== undefined ? data.actualChallengeUrgency : data.challengeUrgency),
     actualChallengeInternal: safeNum(data.actualChallengeInternal !== undefined ? data.actualChallengeInternal : data.challengeInternal),
     actualChallengeExternal: safeNum(data.actualChallengeExternal !== undefined ? data.actualChallengeExternal : data.challengeExternal),
-    
+
     actualMotivationIntrinsic: safeNum(data.actualMotivationIntrinsic !== undefined ? data.actualMotivationIntrinsic : data.motivationIntrinsic),
     actualMotivationExtrinsic: safeNum(data.actualMotivationExtrinsic !== undefined ? data.actualMotivationExtrinsic : data.motivationExtrinsic),
   };
@@ -282,13 +282,13 @@ const sanitizeLog = (docId, data) => {
     planNotes: safeStr(data.planNotes),
     closingNotes: safeStr(data.closingNotes),
     tags: tags,
-    
+
     // Core (Initial)
     challenge: initC, skill: initS, motivation: initM,
-    
+
     // Core (Actual)
     actualChallenge: actC, actualSkill: actS, actualMotivation: actM,
-    
+
     // Calculated Diffs (Actual - Initial)
     diffChallenge: data.diffChallenge !== undefined ? Number(data.diffChallenge) : (actC - initC),
     diffSkill: data.diffSkill !== undefined ? Number(data.diffSkill) : (actS - initS),
@@ -301,14 +301,14 @@ const sanitizeLog = (docId, data) => {
     timePredicted: data.timePredicted ? Number(data.timePredicted) : null,
     timeActual: data.timeActual ? Number(data.timeActual) : (data.actualTime ? Number(data.actualTime) : null),
     timePerceived: data.timePerceived ? Number(data.timePerceived) : (data.perceivedTime ? Number(data.perceivedTime) : null),
-    
+
     emotion: safeNum(data.emotion), entropy: safeNum(data.entropy),
 
     flowState: flowState,
     selfPredictedState: data.selfPredictedState ? { ...data.selfPredictedState, icon: null } : null,
-    actualFlowState: data.actualFlowState || flowState, 
+    actualFlowState: data.actualFlowState || flowState,
     actualActionState: data.actualActionState || null,
-    
+
     status: safeStr(data.status) || 'completed',
     type: safeStr(data.type) || 'log',
     isManualActionOverride: !!data.isManualActionOverride,
@@ -332,7 +332,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = 'flow-detective-proj';
-const isCloudMode = true; // Always true with hardcoded config
+const isCloudMode = false; // Switched to Local Storage by default
 
 // --- Constants ---
 const FLOW_STATES = {
@@ -347,11 +347,11 @@ const Slider = ({ label, value, setValue, minLabel, maxLabel, colorClass, isSub,
   <div className={`mb-3 ${isSub ? 'pl-6 border-l-2 border-slate-100' : ''}`}>
     <div className="flex justify-between items-end mb-1">
       <label className={`font-bold text-slate-700 flex items-center gap-2 ${isSub ? 'text-xs' : 'text-sm'}`}>
-        {Icon && <Icon size={isSub ? 12 : 14} className="text-gray-400"/>} {label}
+        {Icon && <Icon size={isSub ? 12 : 14} className="text-gray-400" />} {label}
       </label>
       <span className={`font-mono font-bold ${colorClass} ${isSub ? 'text-sm' : 'text-lg'}`}>{value}</span>
     </div>
-    <input type="range" min="1" max="10" value={value} onChange={e=>setValue(parseInt(e.target.value))} className={`w-full h-1.5 rounded-lg appearance-none cursor-pointer focus:outline-none bg-gray-200 accent-indigo-600`} />
+    <input type="range" min="1" max="10" value={value} onChange={e => setValue(parseInt(e.target.value))} className={`w-full h-1.5 rounded-lg appearance-none cursor-pointer focus:outline-none bg-gray-200 accent-indigo-600`} />
     {!isSub && <div className="flex justify-between text-[9px] text-gray-400 mt-0.5 uppercase tracking-wider"><span>{minLabel}</span><span>{maxLabel}</span></div>}
   </div>
 );
@@ -383,26 +383,26 @@ const ProfileModal = ({ user, logs, onClose, onLinkGoogle, onEmailAuth, onSignOu
     if (logs.length === 0) { alert(t('noData')); return; }
     // V32.0 Full Headers - Including Sub-dimension Initial/Actual splits
     const headers = [
-      'Timestamp','Activity','Status','Tags',
-      'Flow State (App)','Self Prediction','Action State',
-      'Initial Challenge','Initial Skill','Initial Motivation', 
-      'Actual Challenge','Actual Skill','Actual Motivation',
-      'Initial Complexity','Initial Urgency','Initial Internal Res','Initial External Res',
-      'Actual Complexity','Actual Urgency','Actual Internal Res','Actual External Res',
-      'Initial Hard Skill','Initial Energy','Initial Support',
-      'Actual Hard Skill','Actual Energy','Actual Support',
-      'Initial Intrinsic','Initial Extrinsic',
-      'Actual Intrinsic','Actual Extrinsic',
-      'Predicted Time','Actual Time','Perceived Time',
-      'Emotion','Entropy',
-      'Plan Notes','Closing Notes'
+      'Timestamp', 'Activity', 'Status', 'Tags',
+      'Flow State (App)', 'Self Prediction', 'Action State',
+      'Initial Challenge', 'Initial Skill', 'Initial Motivation',
+      'Actual Challenge', 'Actual Skill', 'Actual Motivation',
+      'Initial Complexity', 'Initial Urgency', 'Initial Internal Res', 'Initial External Res',
+      'Actual Complexity', 'Actual Urgency', 'Actual Internal Res', 'Actual External Res',
+      'Initial Hard Skill', 'Initial Energy', 'Initial Support',
+      'Actual Hard Skill', 'Actual Energy', 'Actual Support',
+      'Initial Intrinsic', 'Initial Extrinsic',
+      'Actual Intrinsic', 'Actual Extrinsic',
+      'Predicted Time', 'Actual Time', 'Perceived Time',
+      'Emotion', 'Entropy',
+      'Plan Notes', 'Closing Notes'
     ];
     const rows = logs.map(log => {
       const dateStr = new Date(log.timestamp).toLocaleString();
       const activityStr = safeRender(log.activity).replace(/"/g, '""');
-      
+
       return [
-        `"${dateStr}"`,`"${activityStr}"`,log.status,`"${(log.tags||[]).join(';')}"`,
+        `"${dateStr}"`, `"${activityStr}"`, log.status, `"${(log.tags || []).join(';')}"`,
         safeRender(log.flowState?.name), safeRender(log.selfPredictedState?.name || '-'), safeRender(log.actionState?.label),
         log.challenge, log.skill, log.motivation,
         log.actualChallenge, log.actualSkill, log.actualMotivation,
@@ -419,7 +419,7 @@ const ProfileModal = ({ user, logs, onClose, onLinkGoogle, onEmailAuth, onSignOu
         // Misc
         log.timePredicted || '', log.timeActual || '', log.timePerceived || '',
         log.emotion, log.entropy,
-        `"${safeRender(log.planNotes).replace(/"/g, '""')}"`,`"${safeRender(log.closingNotes).replace(/"/g, '""')}"`
+        `"${safeRender(log.planNotes).replace(/"/g, '""')}"`, `"${safeRender(log.closingNotes).replace(/"/g, '""')}"`
       ].join(',');
     });
     const csvContent = "\uFEFF" + [headers.join(','), ...rows].join('\n');
@@ -427,7 +427,7 @@ const ProfileModal = ({ user, logs, onClose, onLinkGoogle, onEmailAuth, onSignOu
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `flow_detective_ultimate_${new Date().toISOString().slice(0,10)}.csv`);
+    link.setAttribute('download', `flow_detective_ultimate_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -451,24 +451,24 @@ const ProfileModal = ({ user, logs, onClose, onLinkGoogle, onEmailAuth, onSignOu
           <p className="text-xs text-gray-500">{user.isAnonymous ? t('anonymous') : user.email}</p>
         </div>
         <div className="space-y-4">
-            <div className="flex gap-2">
-               <button onClick={downloadCSV} className="flex-1 bg-indigo-50 text-indigo-600 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-indigo-100 transition-colors"><Download size={14} /> {t('exportCSV')}</button>
-               <button onClick={() => fileInputRef.current?.click()} className="flex-1 bg-teal-50 text-teal-600 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-teal-100 transition-colors"><Upload size={14} /> {t('importCSV')}</button>
-               <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".csv" className="hidden" />
-            </div>
+          <div className="flex gap-2">
+            <button onClick={downloadCSV} className="flex-1 bg-indigo-50 text-indigo-600 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-indigo-100 transition-colors"><Download size={14} /> {t('exportCSV')}</button>
+            <button onClick={() => fileInputRef.current?.click()} className="flex-1 bg-teal-50 text-teal-600 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-teal-100 transition-colors"><Upload size={14} /> {t('importCSV')}</button>
+            <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".csv" className="hidden" />
+          </div>
 
-            <div className="border-t border-gray-100 pt-4">
-              {user.isAnonymous ? (
-                <>
-                  <div className="flex p-1 bg-gray-100 rounded-lg mb-3">
-                    <button onClick={() => {setMode('google'); setAuthError('')}} className={`flex-1 py-1.5 text-xs font-bold rounded-md ${mode === 'google' ? 'bg-white shadow' : 'text-gray-400'}`}>Google</button>
-                    <button onClick={() => {setMode('email'); setAuthError('')}} className={`flex-1 py-1.5 text-xs font-bold rounded-md ${mode === 'email' ? 'bg-white shadow' : 'text-gray-400'}`}>{t('accountPassword')}</button>
-                  </div>
-                  {authError && <div className="p-2 mb-3 bg-red-50 text-red-600 text-[10px] rounded-lg">{authError}</div>}
-                  {mode === 'google' ? <button onClick={onLinkGoogle} className="w-full bg-white border py-2 rounded-xl text-xs">{t('googleArchive')}</button> : <div className="space-y-2"><input type="email" placeholder={t('email')} className="w-full border p-2 rounded text-xs" value={localEmail} onChange={e=>setLocalEmail(e.target.value)} /><input type="password" placeholder={t('password')} className="w-full border p-2 rounded text-xs" value={localPassword} onChange={e=>setLocalPassword(e.target.value)} /><button onClick={()=>onEmailAuth(localEmail, localPassword, false)} className="w-full bg-indigo-600 text-white py-2 rounded text-xs">{t('registerBind')}</button></div>}
-                </>
-              ) : <button onClick={onSignOut} className="w-full bg-gray-50 py-2 rounded text-xs">{t('signOut')}</button>}
-            </div>
+          <div className="border-t border-gray-100 pt-4">
+            {user.isAnonymous ? (
+              <>
+                <div className="flex p-1 bg-gray-100 rounded-lg mb-3">
+                  <button onClick={() => { setMode('google'); setAuthError('') }} className={`flex-1 py-1.5 text-xs font-bold rounded-md ${mode === 'google' ? 'bg-white shadow' : 'text-gray-400'}`}>Google</button>
+                  <button onClick={() => { setMode('email'); setAuthError('') }} className={`flex-1 py-1.5 text-xs font-bold rounded-md ${mode === 'email' ? 'bg-white shadow' : 'text-gray-400'}`}>{t('accountPassword')}</button>
+                </div>
+                {authError && <div className="p-2 mb-3 bg-red-50 text-red-600 text-[10px] rounded-lg">{authError}</div>}
+                {mode === 'google' ? <button onClick={onLinkGoogle} className="w-full bg-white border py-2 rounded-xl text-xs">{t('googleArchive')}</button> : <div className="space-y-2"><input type="email" placeholder={t('email')} className="w-full border p-2 rounded text-xs" value={localEmail} onChange={e => setLocalEmail(e.target.value)} /><input type="password" placeholder={t('password')} className="w-full border p-2 rounded text-xs" value={localPassword} onChange={e => setLocalPassword(e.target.value)} /><button onClick={() => onEmailAuth(localEmail, localPassword, false)} className="w-full bg-indigo-600 text-white py-2 rounded text-xs">{t('registerBind')}</button></div>}
+              </>
+            ) : <button onClick={onSignOut} className="w-full bg-gray-50 py-2 rounded text-xs">{t('signOut')}</button>}
+          </div>
         </div>
       </div>
     </div>
@@ -478,30 +478,30 @@ const ProfileModal = ({ user, logs, onClose, onLinkGoogle, onEmailAuth, onSignOu
 // --- Charts ---
 
 const FlowChannelChart = ({ logs, threshold, t }) => {
-  const size = 300; const t_px = (threshold / 10) * size; 
+  const size = 300; const t_px = (threshold / 10) * size;
   return (
     <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm animate-fade-in relative">
       <div className="absolute top-2 left-2 text-[10px] text-gray-400 font-bold bg-white/80 px-2 rounded backdrop-blur-sm z-10 border border-gray-100">{t('flowChannel')}</div>
       <div className="relative" style={{ width: '100%', paddingBottom: '100%' }}>
-         <svg viewBox={`0 0 ${size} ${size}`} className="absolute inset-0 w-full h-full overflow-hidden rounded-lg border border-gray-100" shapeRendering="geometricPrecision">
-            <rect width={size} height={size} fill="#fef3c7" opacity="0.1" />
-            <line x1={size/2} y1="0" x2={size/2} y2={size} stroke="#cbd5e1" strokeWidth="1" strokeDasharray="4" />
-            <line x1="0" y1={size/2} x2={size} y2={size/2} stroke="#cbd5e1" strokeWidth="1" strokeDasharray="4" />
-            <path d={`M 0 0 L ${size} 0 L 0 ${size} Z`} fill="#fee2e2" opacity="0.3" /> 
-            <polygon points={`0,${size - t_px} ${size},${-t_px} ${size},${t_px} 0,${size + t_px}`} fill="#dcfce7" opacity="0.6" />
-            <circle cx="0" cy={size} r={size * 0.3} fill="#f3f4f6" opacity="0.8" />
-            <text x={size*0.1} y={size*0.1} fontSize="10" fontWeight="bold" opacity="0.5">{t('anxiety')}</text>
-            <text x={size*0.8} y={size*0.9} fontSize="10" fontWeight="bold" opacity="0.5">{t('boredom')}</text>
-            {logs.map((log) => { 
-               const x = ((log.actualSkill - 1) / 9) * size;
-               const y = size - ((log.actualChallenge - 1) / 9) * size;
-               const r = 3 + (log.actualMotivation * 1.5); 
-               const fill = log.actualFlowState?.fill || '#cbd5e1';
-               return <circle key={log.id} cx={x} cy={y} r={r} fill={fill} stroke={fill} strokeWidth={1} fillOpacity={0.6}><title>{safeRender(log.activity)}</title></circle>;
-            })}
-         </svg>
-         <div className="absolute left-1 top-1/2 -rotate-90 text-[9px] text-gray-400 font-bold">{t('challenge')}</div>
-         <div className="absolute bottom-1 left-1/2 text-[9px] text-gray-400 font-bold">{t('skill')}</div>
+        <svg viewBox={`0 0 ${size} ${size}`} className="absolute inset-0 w-full h-full overflow-hidden rounded-lg border border-gray-100" shapeRendering="geometricPrecision">
+          <rect width={size} height={size} fill="#fef3c7" opacity="0.1" />
+          <line x1={size / 2} y1="0" x2={size / 2} y2={size} stroke="#cbd5e1" strokeWidth="1" strokeDasharray="4" />
+          <line x1="0" y1={size / 2} x2={size} y2={size / 2} stroke="#cbd5e1" strokeWidth="1" strokeDasharray="4" />
+          <path d={`M 0 0 L ${size} 0 L 0 ${size} Z`} fill="#fee2e2" opacity="0.3" />
+          <polygon points={`0,${size - t_px} ${size},${-t_px} ${size},${t_px} 0,${size + t_px}`} fill="#dcfce7" opacity="0.6" />
+          <circle cx="0" cy={size} r={size * 0.3} fill="#f3f4f6" opacity="0.8" />
+          <text x={size * 0.1} y={size * 0.1} fontSize="10" fontWeight="bold" opacity="0.5">{t('anxiety')}</text>
+          <text x={size * 0.8} y={size * 0.9} fontSize="10" fontWeight="bold" opacity="0.5">{t('boredom')}</text>
+          {logs.map((log) => {
+            const x = ((log.actualSkill - 1) / 9) * size;
+            const y = size - ((log.actualChallenge - 1) / 9) * size;
+            const r = 3 + (log.actualMotivation * 1.5);
+            const fill = log.actualFlowState?.fill || '#cbd5e1';
+            return <circle key={log.id} cx={x} cy={y} r={r} fill={fill} stroke={fill} strokeWidth={1} fillOpacity={0.6}><title>{safeRender(log.activity)}</title></circle>;
+          })}
+        </svg>
+        <div className="absolute left-1 top-1/2 -rotate-90 text-[9px] text-gray-400 font-bold">{t('challenge')}</div>
+        <div className="absolute bottom-1 left-1/2 text-[9px] text-gray-400 font-bold">{t('skill')}</div>
       </div>
     </div>
   );
@@ -509,11 +509,11 @@ const FlowChannelChart = ({ logs, threshold, t }) => {
 
 const FoggBehaviorChart = ({ logs, bias, t }) => {
   const size = 300;
-  let pathD = `M 0 0`; const points = []; const curveFactor = 10 - (bias * 2); 
+  let pathD = `M 0 0`; const points = []; const curveFactor = 10 - (bias * 2);
   for (let s = 0.5; s <= 10; s += 0.5) {
-      let m = (curveFactor * 2) / (s + 0.5); 
-      const x_px = ((s - 1) / 9) * size; const y_px = size - ((m - 1) / 9) * size; 
-      if (y_px >= 0 && y_px <= size) points.push(`${x_px},${y_px}`);
+    let m = (curveFactor * 2) / (s + 0.5);
+    const x_px = ((s - 1) / 9) * size; const y_px = size - ((m - 1) / 9) * size;
+    if (y_px >= 0 && y_px <= size) points.push(`${x_px},${y_px}`);
   }
   if (points.length > 0) pathD = `M 0 0 L ${points[0]} L ${points.join(' ')} L ${size} ${size}`;
 
@@ -522,18 +522,18 @@ const FoggBehaviorChart = ({ logs, bias, t }) => {
       <div className="absolute top-2 left-2 text-[10px] text-gray-400 font-bold bg-white/80 px-2 rounded backdrop-blur-sm z-10 border border-gray-100">{t('foggModel')}</div>
       <div className="relative" style={{ width: '100%', paddingBottom: '100%' }}>
         <svg viewBox={`0 0 ${size} ${size}`} className="absolute inset-0 w-full h-full overflow-hidden rounded-lg border border-gray-100" shapeRendering="geometricPrecision">
-          <line x1={size/2} y1="0" x2={size/2} y2={size} stroke="#cbd5e1" strokeWidth="1" strokeDasharray="4" />
-          <line x1="0" y1={size/2} x2={size} y2={size/2} stroke="#cbd5e1" strokeWidth="1" strokeDasharray="4" />
+          <line x1={size / 2} y1="0" x2={size / 2} y2={size} stroke="#cbd5e1" strokeWidth="1" strokeDasharray="4" />
+          <line x1="0" y1={size / 2} x2={size} y2={size / 2} stroke="#cbd5e1" strokeWidth="1" strokeDasharray="4" />
           <path d={`${pathD} L 0 0 Z`} fill="#dcfce7" opacity="0.3" />
           <path d={`M ${points[0]} L ${points.join(' ')}`} fill="none" stroke="#6366f1" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-          <text x={size*0.8} y={size*0.2} fill="#16a34a" fontSize="10" fontWeight="bold" opacity="0.8">{t('actionZone')}</text>
-          {logs.map((log) => { 
-             const s = log.actualSkill || log.skill || 5; 
-             const m = log.actualMotivation || log.motivation || 5;
-             const x = ((s - 1) / 9) * size; 
-             const y = size - ((m - 1) / 9) * size; 
-             const fill = log.actualFlowState?.fill || '#cbd5e1';
-             return <circle key={log.id} cx={x} cy={y} r={4} fill={fill} stroke="#fff" strokeWidth={1} fillOpacity={0.8}><title>{safeRender(log.activity)}</title></circle>;
+          <text x={size * 0.8} y={size * 0.2} fill="#16a34a" fontSize="10" fontWeight="bold" opacity="0.8">{t('actionZone')}</text>
+          {logs.map((log) => {
+            const s = log.actualSkill || log.skill || 5;
+            const m = log.actualMotivation || log.motivation || 5;
+            const x = ((s - 1) / 9) * size;
+            const y = size - ((m - 1) / 9) * size;
+            const fill = log.actualFlowState?.fill || '#cbd5e1';
+            return <circle key={log.id} cx={x} cy={y} r={4} fill={fill} stroke="#fff" strokeWidth={1} fillOpacity={0.8}><title>{safeRender(log.activity)}</title></circle>;
           })}
         </svg>
         <div className="absolute left-[-15px] top-1/2 -rotate-90 text-[9px] text-gray-400 font-bold">{t('motivation')}</div>
@@ -545,28 +545,28 @@ const FoggBehaviorChart = ({ logs, bias, t }) => {
 
 const TimeDistortionChart = ({ logs, t }) => {
   const timeLogs = logs.filter(l => l.timeActual && l.timePerceived);
-  const avgActual = timeLogs.length > 0 ? timeLogs.reduce((acc,l) => acc + (l.timeActual || 0), 0) / timeLogs.length : 0;
-  const avgPerceived = timeLogs.length > 0 ? timeLogs.reduce((acc,l) => acc + (l.timePerceived || 0), 0) / timeLogs.length : 0;
+  const avgActual = timeLogs.length > 0 ? timeLogs.reduce((acc, l) => acc + (l.timeActual || 0), 0) / timeLogs.length : 0;
+  const avgPerceived = timeLogs.length > 0 ? timeLogs.reduce((acc, l) => acc + (l.timePerceived || 0), 0) / timeLogs.length : 0;
   const planLogs = logs.filter(l => l.timePredicted);
-  const avgPredicted = planLogs.length > 0 ? planLogs.reduce((acc,l) => acc + (l.timePredicted || 0), 0) / planLogs.length : avgActual;
+  const avgPredicted = planLogs.length > 0 ? planLogs.reduce((acc, l) => acc + (l.timePredicted || 0), 0) / planLogs.length : avgActual;
 
-  if (timeLogs.length === 0 && planLogs.length === 0) return <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm text-center"><Clock size={32} className="mx-auto text-gray-300 mb-2"/><p className="text-gray-500 text-xs">{t('noDataShort')}</p></div>;
+  if (timeLogs.length === 0 && planLogs.length === 0) return <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm text-center"><Clock size={32} className="mx-auto text-gray-300 mb-2" /><p className="text-gray-500 text-xs">{t('noDataShort')}</p></div>;
 
   const distortion = avgActual > 0 ? avgPerceived / avgActual : 1;
-  const predictionError = avgActual > 0 ? (avgActual - avgPredicted) / avgActual : 0; 
+  const predictionError = avgActual > 0 ? (avgActual - avgPredicted) / avgActual : 0;
 
   return (
     <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm animate-fade-in">
-      <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wider mb-4 flex items-center gap-2"><Clock size={14}/> {t('timeLab')}</h3>
-      
+      <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wider mb-4 flex items-center gap-2"><Clock size={14} /> {t('timeLab')}</h3>
+
       <div className="flex items-end justify-around h-32 pb-6 relative">
-          <div className="flex flex-col items-center w-1/4 group"><div className="w-full bg-teal-200 rounded-t-lg transition-all relative" style={{height: `${Math.min((avgPredicted/(avgActual||1))*50, 100)}%`}}></div><span className="text-[10px] font-bold text-teal-600 mt-2">{t('predicted')}</span><span className="text-[9px] text-gray-400">{avgPredicted.toFixed(0)}m</span></div>
-          <div className="flex flex-col items-center w-1/4 group"><div className="w-full bg-slate-300 rounded-t-lg relative" style={{height: '50%'}}></div><span className="text-[10px] font-bold text-slate-600 mt-2">{t('actual')}</span><span className="text-[9px] text-gray-400">{avgActual.toFixed(0)}m</span></div>
-          <div className="flex flex-col items-center w-1/4 group"><div className={`w-full rounded-t-lg transition-all relative ${distortion < 0.9 ? 'bg-green-400' : (distortion > 1.1 ? 'bg-red-400' : 'bg-orange-300')}`} style={{height: `${Math.min((avgPerceived/(avgActual||1))*50, 100)}%`}}></div><span className="text-[10px] font-bold text-orange-600 mt-2">{t('perceived')}</span><span className="text-[9px] text-gray-400">{avgPerceived.toFixed(0)}m</span></div>
+        <div className="flex flex-col items-center w-1/4 group"><div className="w-full bg-teal-200 rounded-t-lg transition-all relative" style={{ height: `${Math.min((avgPredicted / (avgActual || 1)) * 50, 100)}%` }}></div><span className="text-[10px] font-bold text-teal-600 mt-2">{t('predicted')}</span><span className="text-[9px] text-gray-400">{avgPredicted.toFixed(0)}m</span></div>
+        <div className="flex flex-col items-center w-1/4 group"><div className="w-full bg-slate-300 rounded-t-lg relative" style={{ height: '50%' }}></div><span className="text-[10px] font-bold text-slate-600 mt-2">{t('actual')}</span><span className="text-[9px] text-gray-400">{avgActual.toFixed(0)}m</span></div>
+        <div className="flex flex-col items-center w-1/4 group"><div className={`w-full rounded-t-lg transition-all relative ${distortion < 0.9 ? 'bg-green-400' : (distortion > 1.1 ? 'bg-red-400' : 'bg-orange-300')}`} style={{ height: `${Math.min((avgPerceived / (avgActual || 1)) * 50, 100)}%` }}></div><span className="text-[10px] font-bold text-orange-600 mt-2">{t('perceived')}</span><span className="text-[9px] text-gray-400">{avgPerceived.toFixed(0)}m</span></div>
       </div>
-      
+
       <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-gray-50">
-        <div className="text-[9px] text-gray-500"><b>{t('planDeviation')}:</b> {predictionError > 0.1 ? `${t('underestimated')} ${(predictionError*100).toFixed(0)}%` : (predictionError < -0.1 ? `${t('overestimated')} ${Math.abs(predictionError*100).toFixed(0)}%` : t('accurate'))}</div>
+        <div className="text-[9px] text-gray-500"><b>{t('planDeviation')}:</b> {predictionError > 0.1 ? `${t('underestimated')} ${(predictionError * 100).toFixed(0)}%` : (predictionError < -0.1 ? `${t('overestimated')} ${Math.abs(predictionError * 100).toFixed(0)}%` : t('accurate'))}</div>
         <div className="text-[9px] text-gray-500 text-right"><b>{t('distortionRate')}:</b> {distortion.toFixed(2)}x</div>
       </div>
     </div>
@@ -575,8 +575,8 @@ const TimeDistortionChart = ({ logs, t }) => {
 
 const PredictionAccuracyChart = ({ logs, filterTag, t }) => {
   const completedPlans = logs.filter(l => l.status === 'completed' && l.diffChallenge !== undefined);
-  if (completedPlans.length === 0) return <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm text-center"><Target size={32} className="mx-auto text-gray-300 mb-2"/><p className="text-gray-500 text-xs">{t('noDataShort')}</p></div>;
-  
+  if (completedPlans.length === 0) return <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm text-center"><Target size={32} className="mx-auto text-gray-300 mb-2" /><p className="text-gray-500 text-xs">{t('noDataShort')}</p></div>;
+
   const avgDiffC = completedPlans.reduce((acc, l) => acc + (l.diffChallenge || 0), 0) / completedPlans.length;
   const avgDiffS = completedPlans.reduce((acc, l) => acc + (l.diffSkill || 0), 0) / completedPlans.length;
   const avgDiffM = completedPlans.reduce((acc, l) => acc + (l.diffMotivation || 0), 0) / completedPlans.length;
@@ -585,14 +585,14 @@ const PredictionAccuracyChart = ({ logs, filterTag, t }) => {
     <div className="flex items-center gap-2 mb-3">
       <span className="text-[10px] font-bold w-12 text-right text-gray-500">{label}</span>
       <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden flex items-center relative">
-         <div className="absolute left-1/2 w-0.5 h-full bg-slate-300 z-10"></div> 
-         <div 
-           className={`h-full absolute ${color} opacity-80`} 
-           style={{ 
-             left: val >= 0 ? '50%' : `calc(50% - ${Math.min(Math.abs(val)*10, 50)}%)`,
-             width: `${Math.min(Math.abs(val)*10, 50)}%` 
-           }}
-         ></div>
+        <div className="absolute left-1/2 w-0.5 h-full bg-slate-300 z-10"></div>
+        <div
+          className={`h-full absolute ${color} opacity-80`}
+          style={{
+            left: val >= 0 ? '50%' : `calc(50% - ${Math.min(Math.abs(val) * 10, 50)}%)`,
+            width: `${Math.min(Math.abs(val) * 10, 50)}%`
+          }}
+        ></div>
       </div>
       <span className={`text-[10px] font-mono font-bold w-16 text-right ${val > 0.1 ? 'text-red-500' : (val < -0.1 ? 'text-green-500' : 'text-gray-400')}`}>
         {Math.abs(val) < 0.1 ? t('accurate') : (val > 0 ? `${t('underestimated')}${val.toFixed(1)}` : `${t('overestimated')}${Math.abs(val).toFixed(1)}`)}
@@ -616,59 +616,59 @@ const PredictionAccuracyChart = ({ logs, filterTag, t }) => {
 const AISummary = ({ logs, t }) => {
   const completed = logs.filter(l => l.status !== 'pending');
   if (completed.length === 0) return null;
-  
+
   // Advanced Metrics
-  const avgIntrinsic = completed.reduce((acc,l)=>acc+(l.actualMotivationIntrinsic||l.motivationIntrinsic||5),0)/completed.length;
-  const avgExtrinsic = completed.reduce((acc,l)=>acc+(l.actualMotivationExtrinsic||l.motivationExtrinsic||5),0)/completed.length;
-  const avgEnergy = completed.reduce((acc,l)=>acc+(l.actualSkillEnergy||l.skillEnergy||5),0)/completed.length;
-  const avgChallenge = completed.reduce((acc,l)=>acc+(l.actualChallenge||5),0)/completed.length;
-  const avgSkill = completed.reduce((acc,l)=>acc+(l.actualSkill||5),0)/completed.length;
-  const avgResInternal = completed.reduce((acc,l)=>acc+(l.actualChallengeInternal||l.challengeInternal||5),0)/completed.length;
+  const avgIntrinsic = completed.reduce((acc, l) => acc + (l.actualMotivationIntrinsic || l.motivationIntrinsic || 5), 0) / completed.length;
+  const avgExtrinsic = completed.reduce((acc, l) => acc + (l.actualMotivationExtrinsic || l.motivationExtrinsic || 5), 0) / completed.length;
+  const avgEnergy = completed.reduce((acc, l) => acc + (l.actualSkillEnergy || l.skillEnergy || 5), 0) / completed.length;
+  const avgChallenge = completed.reduce((acc, l) => acc + (l.actualChallenge || 5), 0) / completed.length;
+  const avgSkill = completed.reduce((acc, l) => acc + (l.actualSkill || 5), 0) / completed.length;
+  const avgResInternal = completed.reduce((acc, l) => acc + (l.actualChallengeInternal || l.challengeInternal || 5), 0) / completed.length;
 
   const flowLogs = completed.filter(l => l.actualFlowState?.id === 'FLOW');
   const anxietyLogs = completed.filter(l => l.actualFlowState?.id === 'ANXIETY');
-  
+
   const advice = [];
-  
+
   // 1. Soul Reader (Intrinsic Motivation)
   if (avgIntrinsic > 8) {
-      advice.push(t('adviceSoulBurning').replace('{val}', avgIntrinsic.toFixed(1)));
-      // Special logic for "Smurfing" (High Skill, High Intrinsic, Low Challenge)
-      if (avgSkill > 8 && avgChallenge < 6) {
-          advice.push(t('adviceSmurfing'));
-      }
+    advice.push(t('adviceSoulBurning').replace('{val}', avgIntrinsic.toFixed(1)));
+    // Special logic for "Smurfing" (High Skill, High Intrinsic, Low Challenge)
+    if (avgSkill > 8 && avgChallenge < 6) {
+      advice.push(t('adviceSmurfing'));
+    }
   } else if (avgExtrinsic > avgIntrinsic + 3) {
-      advice.push(t('adviceCarrot'));
+    advice.push(t('adviceCarrot'));
   }
 
   // 2. The "Hard Carry" Detector (High Challenge, Low Skill, but Success)
   const hardCarry = completed.filter(l => (l.actualChallenge > l.actualSkill + 2) && l.actualFlowState?.id === 'FLOW');
   if (hardCarry.length > 0) {
-      advice.push(t('advicePotentialBurst').replace('{val}', hardCarry.length));
+    advice.push(t('advicePotentialBurst').replace('{val}', hardCarry.length));
   }
 
   // 3. Calibration Insight
   const diffLogs = completed.filter(l => l.diffChallenge !== undefined);
   if (diffLogs.length > 0) {
-      const avgDiffC = diffLogs.reduce((acc,l)=>acc+l.diffChallenge,0)/diffLogs.length;
-      if (avgDiffC < -1.5) advice.push(t('adviceOverDefense'));
-      else if (avgDiffC > 1.5) advice.push(t('adviceBlindOptimism'));
+    const avgDiffC = diffLogs.reduce((acc, l) => acc + l.diffChallenge, 0) / diffLogs.length;
+    if (avgDiffC < -1.5) advice.push(t('adviceOverDefense'));
+    else if (avgDiffC > 1.5) advice.push(t('adviceBlindOptimism'));
   }
 
   // 4. Energy Management
   if (avgEnergy < 4.5) {
-      if (anxietyLogs.length > flowLogs.length) advice.push(t('adviceLowPower'));
+    if (anxietyLogs.length > flowLogs.length) advice.push(t('adviceLowPower'));
   } else if (avgEnergy > 8 && avgResInternal > 7) {
-      advice.push(t('adviceInternalFriction'));
+    advice.push(t('adviceInternalFriction'));
   }
 
-  if (advice.length === 0) advice.push(t('flowRate').replace('{val}', Math.round(flowLogs.length/completed.length*100)));
+  if (advice.length === 0) advice.push(t('flowRate').replace('{val}', Math.round(flowLogs.length / completed.length * 100)));
 
   return (
     <div className="bg-gradient-to-r from-slate-800 to-indigo-900 p-4 rounded-xl border border-indigo-800 mt-4 text-indigo-100 shadow-lg">
-      <h3 className="text-xs font-bold text-white flex items-center gap-1 mb-2"><Sparkles size={12} className="text-yellow-400"/> {t('sherlockMind')}</h3>
+      <h3 className="text-xs font-bold text-white flex items-center gap-1 mb-2"><Sparkles size={12} className="text-yellow-400" /> {t('sherlockMind')}</h3>
       <div className="text-[10px] leading-relaxed space-y-2">
-         {advice.map((text, i) => <p key={i}>{text}</p>)}
+        {advice.map((text, i) => <p key={i}>{text}</p>)}
       </div>
     </div>
   );
@@ -687,43 +687,43 @@ const TagAnalysis = ({ logs, t }) => { /* ... Same ... */
     });
   });
   const sortedTags = Object.entries(tagStats).map(([tag, data]) => ({
-      tag, avgMot: (data.totalMot / data.count).toFixed(1), count: data.count, topStateId: Object.entries(data.flowStates).sort((a,b) => b[1] - a[1])[0]?.[0] || 'UNKNOWN'
-    })).sort((a, b) => b.count - a.count).slice(0, 5);
+    tag, avgMot: (data.totalMot / data.count).toFixed(1), count: data.count, topStateId: Object.entries(data.flowStates).sort((a, b) => b[1] - a[1])[0]?.[0] || 'UNKNOWN'
+  })).sort((a, b) => b.count - a.count).slice(0, 5);
   return (
     <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm mt-4 animate-fade-in">
-        <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wider mb-4 flex items-center gap-2"><Search size={14} /> {t('behaviorProfile')}</h3>
-        <div className="space-y-3">
-          {sortedTags.length === 0 ? <p className="text-xs text-gray-400 italic text-center py-4">{t('noDataShort')}</p> : sortedTags.map((item) => (
-              <div key={item.tag} className={`flex items-center justify-between text-xs border-b border-gray-50 pb-2 last:border-0`}>
-                <div className="flex items-center gap-2"><span className={`px-2 py-1 rounded-md font-bold bg-indigo-50 text-indigo-700`}>#{item.tag}</span><span className="text-gray-400">x{item.count}</span></div>
-                <div className="flex gap-3 text-right">
-                  <div><span className="block font-bold text-gray-700">{t('state' + item.topStateId) || item.topStateId}</span><span className="text-[9px] text-gray-400">{t('highFreqState')}</span></div>
-                  <div><span className={`block font-bold ${item.avgMot > 6 ? 'text-green-600' : 'text-gray-500'}`}>{item.avgMot}</span><span className="text-[9px] text-gray-400">{t('avgMotivation')}</span></div>
-                </div>
-              </div>
-            ))}
-        </div>
+      <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wider mb-4 flex items-center gap-2"><Search size={14} /> {t('behaviorProfile')}</h3>
+      <div className="space-y-3">
+        {sortedTags.length === 0 ? <p className="text-xs text-gray-400 italic text-center py-4">{t('noDataShort')}</p> : sortedTags.map((item) => (
+          <div key={item.tag} className={`flex items-center justify-between text-xs border-b border-gray-50 pb-2 last:border-0`}>
+            <div className="flex items-center gap-2"><span className={`px-2 py-1 rounded-md font-bold bg-indigo-50 text-indigo-700`}>#{item.tag}</span><span className="text-gray-400">x{item.count}</span></div>
+            <div className="flex gap-3 text-right">
+              <div><span className="block font-bold text-gray-700">{t('state' + item.topStateId) || item.topStateId}</span><span className="text-[9px] text-gray-400">{t('highFreqState')}</span></div>
+              <div><span className={`block font-bold ${item.avgMot > 6 ? 'text-green-600' : 'text-gray-500'}`}>{item.avgMot}</span><span className="text-[9px] text-gray-400">{t('avgMotivation')}</span></div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
 
 const StatsDashboard = ({ logs, uniqueTags, filterTags, setFilterTags, personalFlowThreshold, personalActionBias, t }) => {
-  const [view, setView] = useState('FLOW'); 
+  const [view, setView] = useState('FLOW');
   return (
     <div className="space-y-4 animate-fade-in">
-       <FilterBar uniqueTags={uniqueTags} filterTags={filterTags} setFilterTags={setFilterTags} t={t} />
-       <div className="flex justify-center mb-2 bg-gray-100 p-1 rounded-lg">
-          <button onClick={() => setView('FLOW')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'FLOW' ? 'bg-white shadow text-indigo-600' : 'text-gray-400'}`}>{t('btnFlow')}</button>
-          <button onClick={() => setView('FOGG')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'FOGG' ? 'bg-white shadow text-indigo-600' : 'text-gray-400'}`}>{t('btnFogg')}</button>
-          <button onClick={() => setView('TIME')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'TIME' ? 'bg-white shadow text-orange-600' : 'text-gray-400'}`}>{t('btnTime')}</button>
-          <button onClick={() => setView('PREDICTION')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'PREDICTION' ? 'bg-white text-teal-600 shadow' : 'text-gray-400'}`}>{t('btnCalibrate')}</button>
-       </div>
-       {view === 'FLOW' && <FlowChannelChart logs={logs} threshold={personalFlowThreshold} t={t} />}
-       {view === 'FOGG' && <FoggBehaviorChart logs={logs} bias={personalActionBias} t={t} />}
-       {view === 'TIME' && <TimeDistortionChart logs={logs} t={t} />}
-       {view === 'PREDICTION' && <PredictionAccuracyChart logs={logs} filterTag={null} t={t} />}
-       <AISummary logs={logs} t={t} />
-       <TagAnalysis logs={logs} t={t} />
+      <FilterBar uniqueTags={uniqueTags} filterTags={filterTags} setFilterTags={setFilterTags} t={t} />
+      <div className="flex justify-center mb-2 bg-gray-100 p-1 rounded-lg">
+        <button onClick={() => setView('FLOW')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'FLOW' ? 'bg-white shadow text-indigo-600' : 'text-gray-400'}`}>{t('btnFlow')}</button>
+        <button onClick={() => setView('FOGG')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'FOGG' ? 'bg-white shadow text-indigo-600' : 'text-gray-400'}`}>{t('btnFogg')}</button>
+        <button onClick={() => setView('TIME')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'TIME' ? 'bg-white shadow text-orange-600' : 'text-gray-400'}`}>{t('btnTime')}</button>
+        <button onClick={() => setView('PREDICTION')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'PREDICTION' ? 'bg-white text-teal-600 shadow' : 'text-gray-400'}`}>{t('btnCalibrate')}</button>
+      </div>
+      {view === 'FLOW' && <FlowChannelChart logs={logs} threshold={personalFlowThreshold} t={t} />}
+      {view === 'FOGG' && <FoggBehaviorChart logs={logs} bias={personalActionBias} t={t} />}
+      {view === 'TIME' && <TimeDistortionChart logs={logs} t={t} />}
+      {view === 'PREDICTION' && <PredictionAccuracyChart logs={logs} filterTag={null} t={t} />}
+      <AISummary logs={logs} t={t} />
+      <TagAnalysis logs={logs} t={t} />
     </div>
   );
 };
@@ -742,55 +742,55 @@ const LogList = ({ logs, onDelete, onComplete, t }) => {
         const bgClass = flowState.bg || 'bg-gray-100';
         const colorClass = flowState.color || 'text-gray-400';
         const stateId = flowState.id;
-        
+
         // Recover color if missing from import
         const displayColor = colorClass.startsWith('text') ? colorClass : (stateId === 'FLOW' ? 'text-green-600' : 'text-gray-400');
 
         return (
           <div key={log.id} onClick={() => setExpandedId(isExpanded ? null : log.id)} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden active:scale-[0.99] transition-transform cursor-pointer">
-             {isPending && <div className="absolute left-0 top-0 bottom-0 w-1 bg-teal-400"></div>}
-             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                   <div className={`p-1.5 rounded-lg ${bgClass}`}>
-                      {isPending ? <Calendar size={14} className="text-teal-500"/> : (
-                        stateId === 'FLOW' ? <Zap size={14} className={displayColor} /> : 
-                        stateId === 'ANXIETY' ? <Activity size={14} className={displayColor} /> :
+            {isPending && <div className="absolute left-0 top-0 bottom-0 w-1 bg-teal-400"></div>}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className={`p-1.5 rounded-lg ${bgClass}`}>
+                  {isPending ? <Calendar size={14} className="text-teal-500" /> : (
+                    stateId === 'FLOW' ? <Zap size={14} className={displayColor} /> :
+                      stateId === 'ANXIETY' ? <Activity size={14} className={displayColor} /> :
                         stateId === 'BOREDOM' ? <Coffee size={14} className={displayColor} /> :
-                        <Frown size={14} className={displayColor} />
-                      )}
-                   </div>
-                   <div>
-                     <span className="font-bold text-gray-800 text-sm block">{safeRender(log.activity)}</span>
-                     <div className="text-[9px] text-gray-400">{new Date(log.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
-                   </div>
-                </div>
-                {isPending && <button onClick={(e)=>{e.stopPropagation(); onComplete(log)}} className="bg-teal-50 text-teal-600 px-2 py-1 rounded text-xs font-bold">{t('closeCase')}</button>}
-             </div>
-             {isExpanded && (
-               <div className="mt-3 pt-2 border-t border-gray-50 text-xs space-y-2 animate-fade-in">
-                  <div className="grid grid-cols-3 gap-2 mb-2 text-gray-500 text-[10px]">
-                     <div>{t('challenge')}: {log.actualChallenge || log.challenge}</div>
-                     <div>{t('skill')}: {log.actualSkill || log.skill}</div>
-                     <div>{t('motivation')}: {log.actualMotivation || log.motivation}</div>
-                  </div>
-                  {/* Time */}
-                  {(log.timeActual || log.timePerceived) && (
-                      <div className="flex justify-between bg-gray-50 p-2 rounded text-gray-600 text-[10px] mb-2">
-                         <span>{t('actual')}: {log.timeActual || '-'}m</span>
-                         <span className={log.timePerceived < log.timeActual ? 'text-green-600 font-bold' : ''}>{t('perceived')}: {log.timePerceived || '-'}m</span>
-                         {log.timePredicted && <span className="text-gray-400">{t('predicted')}: {log.timePredicted}m</span>}
-                      </div>
+                          <Frown size={14} className={displayColor} />
                   )}
-                  {/* Self Prediction (Safe Check) */}
-                  {log.selfPredictedState && <div className="bg-indigo-50 p-2 rounded text-indigo-700 text-[10px] mb-2 font-bold">{t('myHunch')}: {t('state'+log.selfPredictedState.id) || safeRender(log.selfPredictedState.name)}</div>}
-                  {/* Notes */}
-                  {log.planNotes && <div className="bg-teal-50/50 p-2 rounded text-teal-800 mb-1 whitespace-pre-wrap">📅 {safeRender(log.planNotes)}</div>}
-                  {log.closingNotes && <div className="bg-indigo-50/50 p-2 rounded text-indigo-800 mb-1 whitespace-pre-wrap">🏁 {safeRender(log.closingNotes)}</div>}
-                  {(!log.planNotes && log.notes) && <div className="bg-yellow-50 p-2 rounded text-gray-600 whitespace-pre-wrap">{safeRender(log.notes)}</div>}
-                  
-                  <button onClick={(e)=>{e.stopPropagation(); onDelete(log.id, e)}} className="w-full text-center text-red-400 py-1 border-t border-red-50 mt-2">{t('delete')}</button>
-               </div>
-             )}
+                </div>
+                <div>
+                  <span className="font-bold text-gray-800 text-sm block">{safeRender(log.activity)}</span>
+                  <div className="text-[9px] text-gray-400">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+              </div>
+              {isPending && <button onClick={(e) => { e.stopPropagation(); onComplete(log) }} className="bg-teal-50 text-teal-600 px-2 py-1 rounded text-xs font-bold">{t('closeCase')}</button>}
+            </div>
+            {isExpanded && (
+              <div className="mt-3 pt-2 border-t border-gray-50 text-xs space-y-2 animate-fade-in">
+                <div className="grid grid-cols-3 gap-2 mb-2 text-gray-500 text-[10px]">
+                  <div>{t('challenge')}: {log.actualChallenge || log.challenge}</div>
+                  <div>{t('skill')}: {log.actualSkill || log.skill}</div>
+                  <div>{t('motivation')}: {log.actualMotivation || log.motivation}</div>
+                </div>
+                {/* Time */}
+                {(log.timeActual || log.timePerceived) && (
+                  <div className="flex justify-between bg-gray-50 p-2 rounded text-gray-600 text-[10px] mb-2">
+                    <span>{t('actual')}: {log.timeActual || '-'}m</span>
+                    <span className={log.timePerceived < log.timeActual ? 'text-green-600 font-bold' : ''}>{t('perceived')}: {log.timePerceived || '-'}m</span>
+                    {log.timePredicted && <span className="text-gray-400">{t('predicted')}: {log.timePredicted}m</span>}
+                  </div>
+                )}
+                {/* Self Prediction (Safe Check) */}
+                {log.selfPredictedState && <div className="bg-indigo-50 p-2 rounded text-indigo-700 text-[10px] mb-2 font-bold">{t('myHunch')}: {t('state' + log.selfPredictedState.id) || safeRender(log.selfPredictedState.name)}</div>}
+                {/* Notes */}
+                {log.planNotes && <div className="bg-teal-50/50 p-2 rounded text-teal-800 mb-1 whitespace-pre-wrap">📅 {safeRender(log.planNotes)}</div>}
+                {log.closingNotes && <div className="bg-indigo-50/50 p-2 rounded text-indigo-800 mb-1 whitespace-pre-wrap">🏁 {safeRender(log.closingNotes)}</div>}
+                {(!log.planNotes && log.notes) && <div className="bg-yellow-50 p-2 rounded text-gray-600 whitespace-pre-wrap">{safeRender(log.notes)}</div>}
+
+                <button onClick={(e) => { e.stopPropagation(); onDelete(log.id, e) }} className="w-full text-center text-red-400 py-1 border-t border-red-50 mt-2">{t('delete')}</button>
+              </div>
+            )}
           </div>
         );
       })}
@@ -798,12 +798,84 @@ const LogList = ({ logs, onDelete, onComplete, t }) => {
   );
 };
 
+// --- Local Storage Helpers ---
+const LOCAL_STORAGE_KEY = 'flow_detective_logs';
+const loadLocalLogs = () => {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { console.error("Local Load Error", e); return []; }
+};
+const saveLocalLogItem = (newLog) => {
+  const current = loadLocalLogs();
+  const updated = [newLog, ...current];
+  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+  return updated;
+};
+const updateLocalLogItem = (updatedLog) => {
+  const current = loadLocalLogs();
+  const index = current.findIndex(l => l.id === updatedLog.id);
+  if (index !== -1) {
+    current[index] = updatedLog;
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(current));
+  }
+  return current;
+};
+const deleteLocalLogItem = (id) => {
+  const current = loadLocalLogs();
+  const updated = current.filter(l => l.id !== id);
+  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+  return updated;
+};
+
+// --- Storage Adapter (v32.3) ---
+const storageAdapter = {
+  load: async (user, isCloudMode) => {
+    if (!isCloudMode) return loadLocalLogs();
+    // Cloud fetch is handled by snapshot listener, but we could add manual fetch here if needed
+    return [];
+  },
+  save: async (log, user, isCloudMode) => {
+    if (!isCloudMode) {
+      const newLogs = saveLocalLogItem(log);
+      return newLogs;
+    }
+    if (user) {
+      await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'logs'), log);
+      return null; // Cloud handled by snapshot
+    }
+    throw new Error("No user for cloud save");
+  },
+  update: async (log, user, isCloudMode) => {
+    if (!isCloudMode) {
+      const newLogs = updateLocalLogItem(log);
+      return newLogs;
+    }
+    if (user) {
+      await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'logs', log.id), log);
+      return null;
+    }
+    throw new Error("No user for cloud update");
+  },
+  delete: async (id, user, isCloudMode) => {
+    if (!isCloudMode) {
+      const newLogs = deleteLocalLogItem(id);
+      return newLogs;
+    }
+    if (user) {
+      await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'logs', id));
+      return null;
+    }
+    throw new Error("No user for cloud delete");
+  }
+};
+
 // --- Main App Component ---
 const FlowDetective = () => {
-  const [activeTab, setActiveTab] = useState('log'); 
+  const [activeTab, setActiveTab] = useState('log');
   const [user, setUser] = useState(null);
   const [logs, setLogs] = useState([]);
-  
+
   // Language State
   const [lang, setLang] = useState(localStorage.getItem('flow_lang') || 'zh');
   const toggleLang = () => {
@@ -824,22 +896,22 @@ const FlowDetective = () => {
 
   // Dimensions
   const [skillComposite, setSkillComposite] = useState(5);
-  const [skillHard, setSkillHard] = useState(5);  
-  const [skillEnergy, setSkillEnergy] = useState(5); 
-  const [supportLevel, setSupportLevel] = useState(5); 
+  const [skillHard, setSkillHard] = useState(5);
+  const [skillEnergy, setSkillEnergy] = useState(5);
+  const [supportLevel, setSupportLevel] = useState(5);
   const [challengeComposite, setChallengeComposite] = useState(5);
-  const [challengeComplex, setChallengeComplex] = useState(5); 
-  const [challengeUrgency, setChallengeUrgency] = useState(5); 
-  const [challengeInternal, setChallengeInternal] = useState(5); 
-  const [challengeExternal, setChallengeExternal] = useState(5); 
+  const [challengeComplex, setChallengeComplex] = useState(5);
+  const [challengeUrgency, setChallengeUrgency] = useState(5);
+  const [challengeInternal, setChallengeInternal] = useState(5);
+  const [challengeExternal, setChallengeExternal] = useState(5);
   const [motivationComposite, setMotivationComposite] = useState(5);
-  const [motivationIntrinsic, setMotivationIntrinsic] = useState(5); 
-  const [motivationExtrinsic, setMotivationExtrinsic] = useState(5); 
-  const [emotion, setEmotion] = useState(5); 
-  const [entropy, setEntropy] = useState(5); 
-  const [timePredicted, setTimePredicted] = useState(''); 
-  const [timeActual, setTimeActual] = useState(''); 
-  const [timePerceived, setTimePerceived] = useState(''); 
+  const [motivationIntrinsic, setMotivationIntrinsic] = useState(5);
+  const [motivationExtrinsic, setMotivationExtrinsic] = useState(5);
+  const [emotion, setEmotion] = useState(5);
+  const [entropy, setEntropy] = useState(5);
+  const [timePredicted, setTimePredicted] = useState('');
+  const [timeActual, setTimeActual] = useState('');
+  const [timePerceived, setTimePerceived] = useState('');
   const [selfPredictedState, setSelfPredictedState] = useState(null);
 
   const [manualFlowState, setManualFlowState] = useState(null);
@@ -856,14 +928,14 @@ const FlowDetective = () => {
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
 
-  const personalFlowThreshold = useMemo(() => 2.5, []); 
+  const personalFlowThreshold = useMemo(() => 2.5, []);
   const personalActionBias = useMemo(() => 0, []);
 
   const finalFlowState = useMemo(() => {
     if (manualFlowState) return manualFlowState;
     // Apathy Check: Low Challenge & Low Skill
     if (challengeComposite <= 3 && skillComposite <= 3) return FLOW_STATES.APATHY;
-    
+
     const diff = challengeComposite - skillComposite;
     if (Math.abs(diff) <= personalFlowThreshold) return FLOW_STATES.FLOW;
     if (diff > 0) return FLOW_STATES.ANXIETY;
@@ -872,14 +944,14 @@ const FlowDetective = () => {
 
   const finalActionState = useMemo(() => {
     if (manualActionState) return manualActionState;
-    
+
     const bias = personalActionBias;
     const curveFactor = 10 - (bias * 2);
     // Fogg Behavior Model Curve
     const thresholdMotivation = (curveFactor * 2) / (skillComposite + 0.5);
-    
+
     const isActionable = motivationComposite >= thresholdMotivation;
-    
+
     return {
       isActionable,
       label: isActionable ? t('actionDoIt') : t('actionThink'),
@@ -896,30 +968,37 @@ const FlowDetective = () => {
 
   // Auth & Sync
   useEffect(() => {
+    if (!isCloudMode) {
+      const localData = loadLocalLogs().map(d => sanitizeLog(d.id, d));
+      setLogs(localData);
+      setIsLoadingLogs(false);
+      return;
+    }
+
+    // Cloud Mode Logic (Only runs if isCloudMode is true)
+    setPersistence(auth, browserLocalPersistence).catch(console.error);
     return onAuthStateChanged(auth, (u) => {
-      if (u) {
-        setAuthGlobalError(null);
-        setUser(u);
-      } else {
-        // Only sign in anonymously if explicitly no user
-        signInAnonymously(auth).catch(e => {
-          console.error("Auth Error:", e);
-          setAuthGlobalError(`Auth Failed: ${e.code || e.message || 'Unknown Error'}`);
-        });
-      }
+      if (u) { setUser(u); setAuthGlobalError(null); }
+      else { signInAnonymously(auth).catch(e => setAuthGlobalError(e.message)); }
     });
-  }, []);
+  }, [isCloudMode]); // Sync with cloud mode
 
   useEffect(() => {
-    if (!user) return;
+    if (!isCloudMode || !user) return;
     const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'logs'));
     return onSnapshot(q, (snap) => {
       const fetched = snap.docs.map(d => sanitizeLog(d.id, d.data()));
-      fetched.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+      fetched.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
       setLogs(fetched);
       setIsLoadingLogs(false);
+    }, (error) => {
+      console.error("Snapshot Error:", error);
+      // Alert user if permission denied (common if rules require auth and auth failed quietly)
+      if (error.code === 'permission-denied') {
+        setAuthGlobalError("Database Permission Denied. Check Rules.");
+      }
     });
-  }, [user]);
+  }, [user, isCloudMode]);
 
   // Dimensions Sync Logic
   useEffect(() => {
@@ -933,23 +1012,26 @@ const FlowDetective = () => {
   useEffect(() => { setManualFlowState(null); setManualActionState(null); setIsCalibrating(false); }, [skillComposite, challengeComposite, motivationComposite]);
 
   // Handlers
-  const handleAddTag = useCallback((e) => { 
-    if (e.key === 'Enter' && tagInput.trim()) { 
-      e.preventDefault(); 
+  const handleAddTag = useCallback((e) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      e.preventDefault();
       const t = tagInput.trim();
-      if(!tags.includes(t)) setTags(prev => [...prev, t]); 
-      setTagInput(''); 
-    } 
+      if (!tags.includes(t)) setTags(prev => [...prev, t]);
+      setTagInput('');
+    }
   }, [tagInput, tags]);
 
-  const addHistoricalTag = useCallback((t) => { if(!tags.includes(t)) setTags(prev => [...prev, t]); }, [tags]);
+  const addHistoricalTag = useCallback((t) => { if (!tags.includes(t)) setTags(prev => [...prev, t]); }, [tags]);
   const removeTag = useCallback((t) => setTags(prev => prev.filter(tag => tag !== t)), []);
 
   const deleteLog = useCallback(async (id, e) => {
     if (e) e.stopPropagation();
-    if (!user || !window.confirm("Confirm delete?")) return;
-    await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'logs', id));
-  }, [user, logs]);
+    if (!window.confirm("Confirm delete?")) return;
+    try {
+      const result = await storageAdapter.delete(id, user, isCloudMode);
+      if (result) setLogs(result.map(d => sanitizeLog(d.id, d)));
+    } catch (e) { alert("Delete failed: " + e.message); }
+  }, [user, logs, isCloudMode]);
 
   const resetForm = useCallback(() => {
     setCurrentActivity(''); setNotes(''); setTags([]); setTagInput('');
@@ -964,15 +1046,15 @@ const FlowDetective = () => {
 
   const startCompleting = useCallback((log) => {
     setLogMode('completing'); setCompletingLog(log);
-    setCurrentActivity(log.activity); setNotes(''); setTags(log.tags||[]);
-    if (log.timePredicted) setTimePredicted(String(log.timePredicted)); 
+    setCurrentActivity(log.activity); setNotes(''); setTags(log.tags || []);
+    if (log.timePredicted) setTimePredicted(String(log.timePredicted));
     setChallengeComposite(5); setSkillComposite(5); setMotivationComposite(5);
     setActiveTab('log');
   }, []);
 
   const handleLog = async () => {
     if (!currentActivity.trim()) return;
-    if (!user) {
+    if (isCloudMode && !user) {
       alert(t('unknown') + ": No User. " + (authGlobalError || "Check connection/domain."));
       return;
     }
@@ -991,35 +1073,37 @@ const FlowDetective = () => {
       selfPredictedState: selfPredictedState ? { ...selfPredictedState, icon: null } : null
     };
     const commonData = {
-      id: Date.now().toString(), timestamp: new Date().toISOString(),
+      id: logMode === 'completing' ? completingLog.id : Date.now().toString(),
+      timestamp: logMode === 'completing' ? completingLog.timestamp : new Date().toISOString(),
       activity: safeRender(currentActivity), notes: safeRender(notes), tags,
       challenge: challengeComposite, skill: skillComposite, motivation: motivationComposite,
       flowState: { ...finalFlowState, icon: null }, actionState: finalActionState,
       isManualFlowOverride: !!manualFlowState, isManualActionOverride: manualActionState !== null,
       ...deepData
     };
-    
+
     if (logMode === 'plan') commonData.planNotes = safeRender(notes);
     else commonData.closingNotes = safeRender(notes);
 
     try {
+      let resultLogs = null;
       if (logMode === 'completing' && completingLog) {
         // PRESERVE selfPredictedState if not changed
         const mergedSelfPred = deepData.selfPredictedState || completingLog.selfPredictedState;
-        
-        await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'logs', completingLog.id), {
+
+        const finalUpdateData = {
           ...commonData, status: 'completed', completedAt: new Date().toISOString(),
-          diffChallenge: challengeComposite - (completingLog.challenge||5),
-          planNotes: completingLog.planNotes || completingLog.notes || '', 
+          diffChallenge: challengeComposite - (completingLog.challenge || 5),
+          planNotes: completingLog.planNotes || completingLog.notes || '',
           closingNotes: safeRender(notes),
           selfPredictedState: mergedSelfPred ? { ...mergedSelfPred, icon: null } : null,
-          
+
           // EXPLICIT ACTUALS (Fix v31.0): Store new values as actuals, preserving old ones
           actualChallenge: challengeComposite, actualSkill: skillComposite, actualMotivation: motivationComposite,
           actualSkillHard: skillHard, actualSkillEnergy: skillEnergy, actualSupportLevel: supportLevel,
           actualChallengeComplex: challengeComplex, actualChallengeUrgency: challengeUrgency, actualChallengeInternal: challengeInternal, actualChallengeExternal: challengeExternal,
           actualMotivationIntrinsic: motivationIntrinsic, actualMotivationExtrinsic: motivationExtrinsic,
-          
+
           // RESTORE INITIALS (Ensure they are not overwritten by commonData if they exist)
           challenge: completingLog.challenge,
           skill: completingLog.skill,
@@ -1033,7 +1117,9 @@ const FlowDetective = () => {
           challengeExternal: completingLog.challengeExternal,
           motivationIntrinsic: completingLog.motivationIntrinsic,
           motivationExtrinsic: completingLog.motivationExtrinsic,
-        });
+        };
+
+        resultLogs = await storageAdapter.update(finalUpdateData, user, isCloudMode);
         setActiveTab('history');
       } else {
         // Initial = Actual for new immediate log
@@ -1046,10 +1132,12 @@ const FlowDetective = () => {
           actualChallengeComplex: challengeComplex, actualChallengeUrgency: challengeUrgency, actualChallengeInternal: challengeInternal, actualChallengeExternal: challengeExternal,
           actualMotivationIntrinsic: motivationIntrinsic, actualMotivationExtrinsic: motivationExtrinsic
         };
-        
-        await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'logs'), logToSave);
+
+        resultLogs = await storageAdapter.save(logToSave, user, isCloudMode);
         if (logMode === 'plan') setActiveTab('todo');
       }
+
+      if (resultLogs) setLogs(resultLogs.map(d => sanitizeLog(d.id, d)));
       resetForm(); setShowSuccess(true); setTimeout(() => setShowSuccess(false), 2000);
     } catch (e) {
       console.error(e);
@@ -1059,11 +1147,11 @@ const FlowDetective = () => {
       setIsSubmitting(false);
     }
   };
-  
+
   // CSV Parsing Engine (Restored from v26.1)
   const handleImportCSV = async (csvText) => {
-    if (!user) return;
-    
+    if (isCloudMode && !user) return; // Simple check
+
     // Simple Parser
     const parseLine = (text) => {
       const res = [];
@@ -1081,20 +1169,20 @@ const FlowDetective = () => {
 
     const lines = csvText.split('\n').filter(l => l.trim());
     if (lines.length < 2) return;
-    
+
     const headers = parseLine(lines[0]);
     // Map headers to fields
     const map = {
       'Timestamp': 'timestamp', 'Activity': 'activity', 'Status': 'status', 'Tags': 'tags',
       'Plan Notes': 'planNotes', 'Closing Notes': 'closingNotes',
       'Predicted Time': 'timePredicted', 'Actual Time': 'timeActual', 'Perceived Time': 'timePerceived',
-      
+
       // Fix Map
-      'Challenge (Total)': 'actualChallenge', 
-      'Skill (Total)': 'actualSkill', 
+      'Challenge (Total)': 'actualChallenge',
+      'Skill (Total)': 'actualSkill',
       'Motivation (Total)': 'actualMotivation',
-      'Initial Challenge': 'challenge', 
-      'Initial Skill': 'skill', 
+      'Initial Challenge': 'challenge',
+      'Initial Skill': 'skill',
       'Initial Motivation': 'motivation',
 
       'Complexity': 'challengeComplex', 'Urgency': 'challengeUrgency', 'Internal Res': 'challengeInternal', 'External Res': 'challengeExternal',
@@ -1110,44 +1198,49 @@ const FlowDetective = () => {
 
     let count = 0;
     for (let i = 1; i < lines.length; i++) {
-        const cols = parseLine(lines[i]);
-        if (cols.length < 2) continue; 
-        const data = {};
-        headers.forEach((h, idx) => { if (map[h]) data[map[h]] = cols[idx]; });
+      const cols = parseLine(lines[i]);
+      if (cols.length < 2) continue;
+      const data = {};
+      headers.forEach((h, idx) => { if (map[h]) data[map[h]] = cols[idx]; });
 
-        // Post-process numbers
-        ['challenge','skill','motivation','actualChallenge','actualSkill','actualMotivation','skillHard','skillEnergy','supportLevel','challengeComplex','challengeUrgency','challengeInternal','challengeExternal','motivationIntrinsic','motivationExtrinsic','emotion','entropy','timePredicted','timeActual','timePerceived'].forEach(k => { if (data[k]) data[k] = Number(data[k]); });
-        
-        if (typeof data.tags === 'string') data.tags = data.tags.split(';').map(t=>t.trim()).filter(Boolean);
-        
-        let selfPred = null;
-        if (data.selfPredName && data.selfPredName !== '-') {
-           const match = Object.values(FLOW_STATES).find(s => data.selfPredName.includes(s.name) || s.name.includes(data.selfPredName));
-           if (match) selfPred = { ...match, icon: null };
-        }
+      // Post-process numbers
+      ['challenge', 'skill', 'motivation', 'actualChallenge', 'actualSkill', 'actualMotivation', 'skillHard', 'skillEnergy', 'supportLevel', 'challengeComplex', 'challengeUrgency', 'challengeInternal', 'challengeExternal', 'motivationIntrinsic', 'motivationExtrinsic', 'emotion', 'entropy', 'timePredicted', 'timeActual', 'timePerceived'].forEach(k => { if (data[k]) data[k] = Number(data[k]); });
 
-        const newLog = {
-          id: 'imp-' + Date.now() + '-' + i,
-          type: 'log',
-          isManualActionOverride: false,
-          isManualFlowOverride: false,
-          ...data,
-          status: 'completed',
-          selfPredictedState: selfPred,
-          flowStateName: data.flowStateName
-        };
-        
-        const sanitized = sanitizeLog(newLog.id, newLog);
-        
-        await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'logs'), sanitized);
-        count++;
+      if (typeof data.tags === 'string') data.tags = data.tags.split(';').map(t => t.trim()).filter(Boolean);
+
+      let selfPred = null;
+      if (data.selfPredName && data.selfPredName !== '-') {
+        const match = Object.values(FLOW_STATES).find(s => data.selfPredName.includes(s.name) || s.name.includes(data.selfPredName));
+        if (match) selfPred = { ...match, icon: null };
+      }
+
+      const newLog = {
+        id: 'imp-' + Date.now() + '-' + i,
+        type: 'log',
+        isManualActionOverride: false,
+        isManualFlowOverride: false,
+        ...data,
+        status: 'completed',
+        selfPredictedState: selfPred,
+        flowStateName: data.flowStateName
+      };
+
+      // Sanitize and save via adapter
+      const sanitized = sanitizeLog(newLog.id, newLog);
+      await storageAdapter.save(sanitized, user, isCloudMode);
+
+      count++;
+    }
+    // Refresh for local mode
+    if (!isCloudMode) {
+      setLogs(loadLocalLogs().map(d => sanitizeLog(d.id, d)));
     }
     alert(`Imported ${count} logs.`);
   };
-  
+
   const toggleVoiceInput = () => { /* ... */ }; // Disabled for now
-  const handleLinkGoogle = async () => { try { await linkWithPopup(user, new GoogleAuthProvider()); } catch(e) { setAuthError(e.message); } };
-  const handleEmailAuth = async (email, pw, isLogin) => { try { if(isLogin) await signInWithEmailAndPassword(auth, email, pw); else await linkWithCredential(user, EmailAuthProvider.credential(email, pw)); } catch(e) { setAuthError(e.message); } };
+  const handleLinkGoogle = async () => { try { await linkWithPopup(user, new GoogleAuthProvider()); } catch (e) { setAuthError(e.message); } };
+  const handleEmailAuth = async (email, pw, isLogin) => { try { if (isLogin) await signInWithEmailAndPassword(auth, email, pw); else await linkWithCredential(user, EmailAuthProvider.credential(email, pw)); } catch (e) { setAuthError(e.message); } };
   const handleSignOut = async () => { await signOut(auth); if (isCloudMode) await signInAnonymously(auth); };
 
   if (authGlobalError) return (
@@ -1158,9 +1251,9 @@ const FlowDetective = () => {
       <div className="mt-6 text-xs text-gray-500 max-w-xs text-left space-y-2">
         <p><strong>可能原因 / Possible Causes:</strong></p>
         <ul className="list-disc pl-4 space-y-1">
-           <li>域名未授权 (Domain not authorized in Firebase Console)</li>
-           <li>网络连接问题 (Network issue)</li>
-           <li>API Key 限制 (API Key restriction)</li>
+          <li>域名未授权 (Domain not authorized in Firebase Console)</li>
+          <li>网络连接问题 (Network issue)</li>
+          <li>API Key 限制 (API Key restriction)</li>
         </ul>
       </div>
     </div>
@@ -1168,94 +1261,92 @@ const FlowDetective = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-gray-800 font-sans pb-24 max-w-md mx-auto border-x border-gray-200 shadow-2xl relative overflow-x-hidden">
-      {showProfile && <ProfileModal user={user} logs={logs} onClose={()=>setShowProfile(false)} onLinkGoogle={handleLinkGoogle} onEmailAuth={handleEmailAuth} onSignOut={handleSignOut} authError={authError} setAuthError={setAuthError} isCloudMode={isCloudMode} onImportCSV={handleImportCSV} t={t} />}
-      
+      {showProfile && <ProfileModal user={user} logs={logs} onClose={() => setShowProfile(false)} onLinkGoogle={handleLinkGoogle} onEmailAuth={handleEmailAuth} onSignOut={handleSignOut} authError={authError} setAuthError={setAuthError} isCloudMode={isCloudMode} onImportCSV={handleImportCSV} t={t} />}
+
       <div className="bg-slate-900 p-6 pt-10 rounded-b-3xl shadow-xl relative z-10 text-white flex justify-between items-center">
-        <div><h1 className="text-xl font-bold">Flow Detective 32.2</h1><p className="text-[10px] text-slate-400">Holographic</p></div>
+        <div><h1 className="text-xl font-bold">Flow Detective 32.3</h1><p className="text-[10px] text-slate-400">Local First</p></div>
         <div className="flex gap-2 items-center">
-           {!isCloudMode && <span className="text-[9px] bg-orange-500/20 text-orange-200 px-2 py-0.5 rounded border border-orange-500/30">{t('localDemoTag')}</span>}
-           <button onClick={toggleLang} className="p-2 rounded-full bg-slate-800 ring-1 ring-slate-600 flex items-center justify-center transition-colors">
-              <Languages size={18} className="text-white" />
-              <span className="text-[9px] ml-1">{lang === 'zh' ? 'EN' : '中'}</span>
-           </button>
-           <button onClick={() => setShowProfile(true)} className={`p-2 rounded-full ring-1 flex items-center justify-center transition-colors ${!user ? 'opacity-50 cursor-not-allowed bg-slate-800 ring-slate-700' : (isCloudMode ? 'bg-indigo-900 ring-indigo-500' : 'bg-orange-900 ring-orange-500')}`}>
-              {user ? <User size={20} className="text-white" /> : <Loader2 size={20} className="text-slate-500 animate-spin" />}
-           </button>
+          {!isCloudMode && <span className="text-[9px] bg-orange-500/20 text-orange-200 px-2 py-0.5 rounded border border-orange-500/30">{t('localDemoTag')}</span>}
+          <button onClick={toggleLang} className="p-2 rounded-full bg-slate-800 ring-1 ring-slate-600 flex items-center justify-center transition-colors">
+            <Languages size={18} className="text-white" />
+            <span className="text-[9px] ml-1">{lang === 'zh' ? 'EN' : '中'}</span>
+          </button>
+          <button onClick={() => setShowProfile(true)} className={`p-2 rounded-full ring-1 flex items-center justify-center transition-colors ${!user ? 'opacity-50 cursor-not-allowed bg-slate-800 ring-slate-700' : (isCloudMode ? 'bg-indigo-900 ring-indigo-500' : 'bg-orange-900 ring-orange-500')}`}>
+            {user ? <User size={20} className="text-white" /> : <Loader2 size={20} className="text-slate-500 animate-spin" />}
+          </button>
         </div>
       </div>
 
       <div className="p-4 pt-6 space-y-6">
         {activeTab === 'log' && (
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-             <div className="flex justify-between items-center mb-4">
-                <div className="bg-gray-100 p-1 rounded-lg flex gap-1"><button onClick={() => setLogMode('immediate')} className={`px-3 py-1 rounded-md text-[10px] ${logMode === 'immediate' ? 'bg-white shadow' : ''}`}>{t('immediate')}</button><button onClick={() => setLogMode('plan')} className={`px-3 py-1 rounded-md text-[10px] ${logMode === 'plan' ? 'bg-white shadow' : ''}`}>{t('plan')}</button></div>
-                <button onClick={() => setIsDeepDive(!isDeepDive)} className="text-[10px] bg-gray-100 px-2 py-1 rounded-full">{isDeepDive ? 'Pro' : 'Lite'}</button>
-             </div>
-             
-             <div className="mb-4">
-                <input type="text" placeholder={t('activityPlaceholder')} className="w-full bg-slate-50 border p-3 rounded-xl text-sm" value={currentActivity} onChange={e=>setCurrentActivity(e.target.value)} disabled={logMode === 'completing'}/>
-                <div className="mt-2">
-                   <div className="flex flex-wrap gap-2 mb-2">{tags.map((t, i)=><span key={i} className="text-[9px] bg-indigo-50 px-2 py-1 rounded text-indigo-600">#{safeRender(t)} <button onClick={()=>removeTag(t)}>x</button></span>)}
-                     <input type="text" placeholder="+Tag" className="bg-transparent text-[10px]" value={tagInput} onChange={e=>setTagInput(e.target.value)} onKeyDown={handleAddTag} />
-                   </div>
-                   <div className="flex gap-1 overflow-x-auto pb-1 no-scrollbar opacity-70">
-                      {uniqueTags.filter(t => !tags.includes(t)).slice(0, 5).map(t => (<button key={t} onClick={() => addHistoricalTag(t)} className="text-[9px] border px-2 py-0.5 rounded-full text-gray-400 hover:bg-gray-50">+{safeRender(t)}</button>))}
-                   </div>
-                </div>
-                <div className="flex mt-2 gap-2"><button onClick={toggleVoiceInput} className={`text-[10px] border px-2 py-1 rounded ${isListening ? 'bg-red-50 text-red-500' : ''}`}>{isListening ? 'Stop' : 'Voice'}</button>
-                {/* AI Button Disabled */}
-                {/* <button className="text-[10px] bg-gray-100 text-gray-400 px-2 py-1 rounded cursor-not-allowed"><Sparkles size={10} className="inline mr-1"/>AI</button> */}
-                <textarea placeholder={logMode === 'plan' ? t('planNotesPlaceholder') : t('obsNotesPlaceholder')} className="w-full bg-transparent border p-2 text-xs rounded" value={notes} onChange={e=>setNotes(e.target.value)} /></div>
-             </div>
+            <div className="flex justify-between items-center mb-4">
+              <div className="bg-gray-100 p-1 rounded-lg flex gap-1"><button onClick={() => setLogMode('immediate')} className={`px-3 py-1 rounded-md text-[10px] ${logMode === 'immediate' ? 'bg-white shadow' : ''}`}>{t('immediate')}</button><button onClick={() => setLogMode('plan')} className={`px-3 py-1 rounded-md text-[10px] ${logMode === 'plan' ? 'bg-white shadow' : ''}`}>{t('plan')}</button></div>
+              <button onClick={() => setIsDeepDive(!isDeepDive)} className="text-[10px] bg-gray-100 px-2 py-1 rounded-full">{isDeepDive ? 'Pro' : 'Lite'}</button>
+            </div>
 
-             {/* Self-Prediction */}
-             {logMode === 'plan' && (
-                <div className="mb-4 p-3 bg-teal-50/50 rounded-xl border border-teal-100">
-                  <h4 className="text-[10px] font-bold text-teal-700 uppercase mb-2 flex items-center gap-1"><Eye size={12}/> {t('myHunch')}</h4>
-                  <div className="flex gap-2 justify-around">
-                    {[FLOW_STATES.FLOW, FLOW_STATES.ANXIETY, FLOW_STATES.BOREDOM, FLOW_STATES.APATHY].map(s => (
-                      <button key={s.id} onClick={() => setSelfPredictedState(s)} className={`flex flex-col items-center p-2 rounded-lg border ${selfPredictedState?.id === s.id ? 'bg-white shadow border-teal-300' : 'border-transparent opacity-50'}`}>
-                        <s.icon size={16} className={s.color} />
-                        <span className="text-[8px] mt-1">{t('state' + s.id).split(' ')[0]}</span>
-                      </button>
-                    ))}
+            <div className="mb-4">
+              <input type="text" placeholder={t('activityPlaceholder')} className="w-full bg-slate-50 border p-3 rounded-xl text-sm" value={currentActivity} onChange={e => setCurrentActivity(e.target.value)} disabled={logMode === 'completing'} />
+              <div className="mt-2">
+                <div className="flex flex-wrap gap-2 mb-2">{tags.map((t, i) => <span key={i} className="text-[9px] bg-indigo-50 px-2 py-1 rounded text-indigo-600">#{safeRender(t)} <button onClick={() => removeTag(t)}>x</button></span>)}
+                  <input type="text" placeholder="+Tag" className="bg-transparent text-[10px]" value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={handleAddTag} />
+                </div>
+                <div className="flex gap-1 overflow-x-auto pb-1 no-scrollbar opacity-70">
+                  {uniqueTags.filter(t => !tags.includes(t)).slice(0, 5).map(t => (<button key={t} onClick={() => addHistoricalTag(t)} className="text-[9px] border px-2 py-0.5 rounded-full text-gray-400 hover:bg-gray-50">+{safeRender(t)}</button>))}
+                </div>
+              </div>
+              <div className="flex mt-2 gap-2"><button onClick={toggleVoiceInput} className={`text-[10px] border px-2 py-1 rounded ${isListening ? 'bg-red-50 text-red-500' : ''}`}>{isListening ? 'Stop' : 'Voice'}</button>
+                <textarea placeholder={logMode === 'plan' ? t('planNotesPlaceholder') : t('obsNotesPlaceholder')} className="w-full bg-transparent border p-2 text-xs rounded" value={notes} onChange={e => setNotes(e.target.value)} /></div>
+            </div>
+
+            {/* Self-Prediction */}
+            {logMode === 'plan' && (
+              <div className="mb-4 p-3 bg-teal-50/50 rounded-xl border border-teal-100">
+                <h4 className="text-[10px] font-bold text-teal-700 uppercase mb-2 flex items-center gap-1"><Eye size={12} /> {t('myHunch')}</h4>
+                <div className="flex gap-2 justify-around">
+                  {[FLOW_STATES.FLOW, FLOW_STATES.ANXIETY, FLOW_STATES.BOREDOM, FLOW_STATES.APATHY].map(s => (
+                    <button key={s.id} onClick={() => setSelfPredictedState(s)} className={`flex flex-col items-center p-2 rounded-lg border ${selfPredictedState?.id === s.id ? 'bg-white shadow border-teal-300' : 'border-transparent opacity-50'}`}>
+                      <s.icon size={16} className={s.color} />
+                      <span className="text-[8px] mt-1">{t('state' + s.id).split(' ')[0]}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {isDeepDive && (
+              <div className="mb-6 space-y-4 border-b border-dashed border-gray-200 pb-4">
+                <div className="bg-purple-50/50 p-3 rounded-xl border border-purple-100">
+                  <h4 className="text-[10px] font-bold text-purple-700 uppercase mb-2">{t('psychProfile')}</h4>
+                  <Slider label={t('emotion')} value={emotion} setValue={setEmotion} minLabel="-" maxLabel="+" colorClass="text-purple-600" isSub />
+                  <Slider label={t('entropy')} value={entropy} setValue={setEntropy} minLabel="Chaos" maxLabel="Order" colorClass="text-purple-600" isSub />
+                </div>
+                <div className="bg-orange-50/50 p-3 rounded-xl border border-orange-100">
+                  <h4 className="text-[10px] font-bold text-orange-700 uppercase mb-2">{t('timeLab')}</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div><label className="text-[9px] text-gray-500 block">{t('predicted')}</label><input type="number" className="w-full bg-white border border-orange-200 rounded p-1 text-xs text-center" value={timePredicted} onChange={e => setTimePredicted(e.target.value)} /></div>
+                    {logMode !== 'plan' && (<><div><label className="text-[9px] text-gray-500 block">{t('actual')}</label><input type="number" className="w-full bg-white border border-orange-200 rounded p-1 text-xs text-center" value={timeActual} onChange={e => setTimeActual(e.target.value)} /></div><div><label className="text-[9px] text-gray-500 block">{t('perceived')}</label><input type="number" className="w-full bg-white border border-orange-200 rounded p-1 text-xs text-center" value={timePerceived} onChange={e => setTimePerceived(e.target.value)} /></div></>)}
                   </div>
                 </div>
-             )}
+              </div>
+            )}
 
-             {isDeepDive && (
-                <div className="mb-6 space-y-4 border-b border-dashed border-gray-200 pb-4">
-                  <div className="bg-purple-50/50 p-3 rounded-xl border border-purple-100">
-                    <h4 className="text-[10px] font-bold text-purple-700 uppercase mb-2">{t('psychProfile')}</h4>
-                    <Slider label={t('emotion')} value={emotion} setValue={setEmotion} minLabel="-" maxLabel="+" colorClass="text-purple-600" isSub />
-                    <Slider label={t('entropy')} value={entropy} setValue={setEntropy} minLabel="Chaos" maxLabel="Order" colorClass="text-purple-600" isSub />
-                  </div>
-                  <div className="bg-orange-50/50 p-3 rounded-xl border border-orange-100">
-                    <h4 className="text-[10px] font-bold text-orange-700 uppercase mb-2">{t('timeLab')}</h4>
-                    <div className="grid grid-cols-3 gap-2">
-                       <div><label className="text-[9px] text-gray-500 block">{t('predicted')}</label><input type="number" className="w-full bg-white border border-orange-200 rounded p-1 text-xs text-center" value={timePredicted} onChange={e=>setTimePredicted(e.target.value)} /></div>
-                       {logMode !== 'plan' && (<><div><label className="text-[9px] text-gray-500 block">{t('actual')}</label><input type="number" className="w-full bg-white border border-orange-200 rounded p-1 text-xs text-center" value={timeActual} onChange={e=>setTimeActual(e.target.value)} /></div><div><label className="text-[9px] text-gray-500 block">{t('perceived')}</label><input type="number" className="w-full bg-white border border-orange-200 rounded p-1 text-xs text-center" value={timePerceived} onChange={e=>setTimePerceived(e.target.value)} /></div></>)}
-                    </div>
-                  </div>
-                </div>
-             )}
+            <div className="space-y-4">
+              <div><Slider label={t('ability')} value={skillComposite} setValue={setSkillComposite} colorClass="text-teal-600" />
+                {isDeepDive && <div className="pl-4"><Slider label={t('hardSkill')} value={skillHard} setValue={setSkillHard} isSub /><Slider label={t('energy')} value={skillEnergy} setValue={setSkillEnergy} isSub /><Slider label={t('support')} value={supportLevel} setValue={setSupportLevel} isSub /></div>}</div>
+              <div><Slider label={t('resistance')} value={challengeComposite} setValue={setChallengeComposite} colorClass="text-indigo-600" />
+                {isDeepDive && <div className="pl-4"><Slider label={t('complexity')} value={challengeComplex} setValue={setChallengeComplex} isSub /><Slider label={t('urgency')} value={challengeUrgency} setValue={setChallengeUrgency} isSub /><Slider label={t('internalRes')} value={challengeInternal} setValue={setChallengeInternal} isSub /><Slider label={t('externalRes')} value={challengeExternal} setValue={setChallengeExternal} isSub /></div>}</div>
+              <div><Slider label={t('motivation')} value={motivationComposite} setValue={setMotivationComposite} colorClass="text-purple-600" />
+                {isDeepDive && <div className="pl-4"><Slider label={t('intrinsic')} value={motivationIntrinsic} setValue={setMotivationIntrinsic} isSub /><Slider label={t('extrinsic')} value={motivationExtrinsic} setValue={setMotivationExtrinsic} isSub /></div>}</div>
+            </div>
 
-             <div className="space-y-4">
-                <div><Slider label={t('ability')} value={skillComposite} setValue={setSkillComposite} colorClass="text-teal-600" />
-                   {isDeepDive && <div className="pl-4"><Slider label={t('hardSkill')} value={skillHard} setValue={setSkillHard} isSub/><Slider label={t('energy')} value={skillEnergy} setValue={setSkillEnergy} isSub/><Slider label={t('support')} value={supportLevel} setValue={setSupportLevel} isSub/></div>}</div>
-                <div><Slider label={t('resistance')} value={challengeComposite} setValue={setChallengeComposite} colorClass="text-indigo-600" />
-                   {isDeepDive && <div className="pl-4"><Slider label={t('complexity')} value={challengeComplex} setValue={setChallengeComplex} isSub/><Slider label={t('urgency')} value={challengeUrgency} setValue={setChallengeUrgency} isSub/><Slider label={t('internalRes')} value={challengeInternal} setValue={setChallengeInternal} isSub/><Slider label={t('externalRes')} value={challengeExternal} setValue={setChallengeExternal} isSub/></div>}</div>
-                <div><Slider label={t('motivation')} value={motivationComposite} setValue={setMotivationComposite} colorClass="text-purple-600" />
-                   {isDeepDive && <div className="pl-4"><Slider label={t('intrinsic')} value={motivationIntrinsic} setValue={setMotivationIntrinsic} isSub/><Slider label={t('extrinsic')} value={motivationExtrinsic} setValue={setMotivationExtrinsic} isSub/></div>}</div>
-             </div>
-
-             <div className="mt-4 p-3 bg-slate-50 rounded-xl text-xs flex justify-between">
-                <div className="flex gap-2 items-center"><finalFlowState.icon size={16} className={finalFlowState.color} /><span className={`font-bold ${finalFlowState.color}`}>{t('state' + finalFlowState.id)}</span></div>
-                <div className="flex gap-2 items-center"><span className={`font-bold ${finalActionState.isActionable ? 'text-green-600' : 'text-gray-500'}`}>{finalActionState.label}</span>{!isCalibrating && logMode !== 'plan' && <button onClick={() => setIsCalibrating(true)} className="text-[9px] underline">{t('correction')}</button>}{isCalibrating && <div className="flex gap-1"><button onClick={() => setManualFlowState(FLOW_STATES.ANXIETY)} className="p-1 bg-red-100 rounded text-red-600"><Activity size={10}/></button><button onClick={() => setManualFlowState(FLOW_STATES.FLOW)} className="p-1 bg-green-100 rounded text-green-600"><Zap size={10}/></button><button onClick={() => setManualFlowState(FLOW_STATES.BOREDOM)} className="p-1 bg-yellow-100 rounded text-yellow-600"><Coffee size={10}/></button></div>}</div>
-             </div>
-             <button onClick={handleLog} disabled={!currentActivity || isSubmitting} className="w-full mt-4 bg-slate-800 text-white py-3 rounded-xl text-sm font-bold flex justify-center items-center gap-2">
-                {isSubmitting ? <Loader2 className="animate-spin" size={20}/> : (showSuccess ? t('saved') : (logMode === 'plan' ? t('addToTodo') : t('recordCase')))}
-             </button>
+            <div className="mt-4 p-3 bg-slate-50 rounded-xl text-xs flex justify-between">
+              <div className="flex gap-2 items-center"><finalFlowState.icon size={16} className={finalFlowState.color} /><span className={`font-bold ${finalFlowState.color}`}>{t('state' + finalFlowState.id)}</span></div>
+              <div className="flex gap-2 items-center"><span className={`font-bold ${finalActionState.isActionable ? 'text-green-600' : 'text-gray-500'}`}>{finalActionState.label}</span>{!isCalibrating && logMode !== 'plan' && <button onClick={() => setIsCalibrating(true)} className="text-[9px] underline">{t('correction')}</button>}{isCalibrating && <div className="flex gap-1"><button onClick={() => setManualFlowState(FLOW_STATES.ANXIETY)} className="p-1 bg-red-100 rounded text-red-600"><Activity size={10} /></button><button onClick={() => setManualFlowState(FLOW_STATES.FLOW)} className="p-1 bg-green-100 rounded text-green-600"><Zap size={10} /></button><button onClick={() => setManualFlowState(FLOW_STATES.BOREDOM)} className="p-1 bg-yellow-100 rounded text-yellow-600"><Coffee size={10} /></button></div>}</div>
+            </div>
+            <button onClick={handleLog} disabled={!currentActivity || isSubmitting} className="w-full mt-4 bg-slate-800 text-white py-3 rounded-xl text-sm font-bold flex justify-center items-center gap-2">
+              {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : (showSuccess ? t('saved') : (logMode === 'plan' ? t('addToTodo') : t('recordCase')))}
+            </button>
           </div>
         )}
 
@@ -1265,18 +1356,18 @@ const FlowDetective = () => {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-200 p-2 flex justify-around z-50">
-         <button onClick={()=>setActiveTab('log')}><Plus /></button>
-         <button onClick={()=>setActiveTab('todo')}><ListTodo /></button>
-         <button onClick={()=>setActiveTab('stats')}><BarChart2 /></button>
-         <button onClick={()=>setActiveTab('history')}><History /></button>
+        <button onClick={() => setActiveTab('log')}><Plus /></button>
+        <button onClick={() => setActiveTab('todo')}><ListTodo /></button>
+        <button onClick={() => setActiveTab('stats')}><BarChart2 /></button>
+        <button onClick={() => setActiveTab('history')}><History /></button>
       </div>
 
       {/* Debug Footer */}
       <div className="fixed bottom-16 left-0 right-0 text-[8px] text-gray-300 text-center pointer-events-none z-40">
-        UID: {user ? user.uid.slice(0,6)+'...' : 'No User'} | Ver: 32.2
+        UID: {user ? user.uid.slice(0, 6) + '...' : 'No User'} | Ver: 32.3
         {authGlobalError && <div className="text-red-400 bg-white/90 p-1">{authGlobalError}</div>}
       </div>
-    </div>
+    </div >
   );
 };
 export default FlowDetective;
