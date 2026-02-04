@@ -710,20 +710,35 @@ const TagAnalysis = ({ logs, t }) => { /* ... Same ... */
 const StatsDashboard = ({ logs, uniqueTags, filterTags, setFilterTags, personalFlowThreshold, personalActionBias, t }) => {
   const [view, setView] = useState('FLOW');
   return (
-    <div className="space-y-4 animate-fade-in">
-      <FilterBar uniqueTags={uniqueTags} filterTags={filterTags} setFilterTags={setFilterTags} t={t} />
-      <div className="flex justify-center mb-2 bg-gray-100 p-1 rounded-lg">
-        <button onClick={() => setView('FLOW')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'FLOW' ? 'bg-white shadow text-indigo-600' : 'text-gray-400'}`}>{t('btnFlow')}</button>
-        <button onClick={() => setView('FOGG')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'FOGG' ? 'bg-white shadow text-indigo-600' : 'text-gray-400'}`}>{t('btnFogg')}</button>
-        <button onClick={() => setView('TIME')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'TIME' ? 'bg-white shadow text-orange-600' : 'text-gray-400'}`}>{t('btnTime')}</button>
-        <button onClick={() => setView('PREDICTION')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'PREDICTION' ? 'bg-white text-teal-600 shadow' : 'text-gray-400'}`}>{t('btnCalibrate')}</button>
+    <div className="animate-fade-in">
+      {/* Controls Container */}
+      <div className="mb-4 space-y-2">
+        <FilterBar uniqueTags={uniqueTags} filterTags={filterTags} setFilterTags={setFilterTags} t={t} />
+        <div className="flex justify-center bg-gray-100 p-1 rounded-lg">
+          <button onClick={() => setView('FLOW')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'FLOW' ? 'bg-white shadow text-indigo-600' : 'text-gray-400'}`}>{t('btnFlow')}</button>
+          <button onClick={() => setView('FOGG')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'FOGG' ? 'bg-white shadow text-indigo-600' : 'text-gray-400'}`}>{t('btnFogg')}</button>
+          <button onClick={() => setView('TIME')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'TIME' ? 'bg-white shadow text-orange-600' : 'text-gray-400'}`}>{t('btnTime')}</button>
+          <button onClick={() => setView('PREDICTION')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'PREDICTION' ? 'bg-white text-teal-600 shadow' : 'text-gray-400'}`}>{t('btnCalibrate')}</button>
+        </div>
       </div>
-      {view === 'FLOW' && <FlowChannelChart logs={logs} threshold={personalFlowThreshold} t={t} />}
-      {view === 'FOGG' && <FoggBehaviorChart logs={logs} bias={personalActionBias} t={t} />}
-      {view === 'TIME' && <TimeDistortionChart logs={logs} t={t} />}
-      {view === 'PREDICTION' && <PredictionAccuracyChart logs={logs} filterTag={null} t={t} />}
-      <AISummary logs={logs} t={t} />
-      <TagAnalysis logs={logs} t={t} />
+
+      {/* Responsive Grid Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+        {/* Left Column: Main Chart */}
+        <div>
+          {view === 'FLOW' && <FlowChannelChart logs={logs} threshold={personalFlowThreshold} t={t} />}
+          {view === 'FOGG' && <FoggBehaviorChart logs={logs} bias={personalActionBias} t={t} />}
+          {view === 'TIME' && <TimeDistortionChart logs={logs} t={t} />}
+          {view === 'PREDICTION' && <PredictionAccuracyChart logs={logs} filterTag={null} t={t} />}
+        </div>
+
+        {/* Right Column: Analysis & Insights */}
+        <div className="space-y-4">
+          {/* Note: Components have internal margins, but space-y handles gap */}
+          <div className="-mt-4 md:mt-0"><AISummary logs={logs} t={t} /></div>
+          <div className="-mt-4 md:mt-0"><TagAnalysis logs={logs} t={t} /></div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -1260,7 +1275,7 @@ const FlowDetective = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 text-gray-800 font-sans pb-24 max-w-md mx-auto border-x border-gray-200 shadow-2xl relative overflow-x-hidden">
+    <div className="min-h-screen bg-slate-50 text-gray-800 font-sans pb-24 w-full md:max-w-4xl mx-auto border-x border-gray-200 shadow-2xl relative overflow-x-hidden">
       {showProfile && <ProfileModal user={user} logs={logs} onClose={() => setShowProfile(false)} onLinkGoogle={handleLinkGoogle} onEmailAuth={handleEmailAuth} onSignOut={handleSignOut} authError={authError} setAuthError={setAuthError} isCloudMode={isCloudMode} onImportCSV={handleImportCSV} t={t} />}
 
       <div className="bg-slate-900 p-6 pt-10 rounded-b-3xl shadow-xl relative z-10 text-white flex justify-between items-center">
@@ -1355,7 +1370,7 @@ const FlowDetective = () => {
         {activeTab === 'history' && <LogList logs={statsLogs} onDelete={deleteLog} t={t} />}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-200 p-2 flex justify-around z-50">
+      <div className="fixed bottom-0 left-0 right-0 w-full md:max-w-4xl mx-auto bg-white border-t border-gray-200 p-2 flex justify-around z-50">
         <button onClick={() => setActiveTab('log')}><Plus /></button>
         <button onClick={() => setActiveTab('todo')}><ListTodo /></button>
         <button onClick={() => setActiveTab('stats')}><BarChart2 /></button>
