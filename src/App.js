@@ -346,13 +346,13 @@ const FLOW_STATES = {
 const Slider = ({ label, value, setValue, minLabel, maxLabel, colorClass, isSub, icon: Icon }) => (
   <div className={`mb-3 ${isSub ? 'pl-6 border-l-2 border-slate-100' : ''}`}>
     <div className="flex justify-between items-end mb-1">
-      <label className={`font-bold text-slate-700 flex items-center gap-2 ${isSub ? 'text-xs' : 'text-sm'}`}>
+      <label className={`font-bold text-slate-700 flex items-center gap-2 ${isSub ? 'text-sm' : 'text-base'}`}>
         {Icon && <Icon size={isSub ? 12 : 14} className="text-gray-400" />} {label}
       </label>
-      <span className={`font-mono font-bold ${colorClass} ${isSub ? 'text-sm' : 'text-lg'}`}>{value}</span>
+      <span className={`font-mono font-bold ${colorClass} ${isSub ? 'text-base' : 'text-lg'}`}>{value}</span>
     </div>
     <input type="range" min="1" max="10" value={value} onChange={e => setValue(parseInt(e.target.value))} className={`w-full h-1.5 rounded-lg appearance-none cursor-pointer focus:outline-none bg-gray-200 accent-indigo-600`} />
-    {!isSub && <div className="flex justify-between text-[9px] text-gray-400 mt-0.5 uppercase tracking-wider"><span>{minLabel}</span><span>{maxLabel}</span></div>}
+    {!isSub && <div className="flex justify-between text-xs text-gray-400 mt-0.5 uppercase tracking-wider"><span>{minLabel}</span><span>{maxLabel}</span></div>}
   </div>
 );
 
@@ -364,10 +364,10 @@ const FilterBar = ({ uniqueTags, filterTags, setFilterTags, t }) => {
   };
   return (
     <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-2 no-scrollbar">
-      <div className="flex items-center gap-1 text-gray-400 shrink-0 text-[10px] font-bold"><Filter size={10} /> {t('focus')}:</div>
-      <button onClick={() => toggleTag('ALL')} className={`shrink-0 px-2 py-1 rounded-full text-[10px] font-bold transition-colors ${filterTags.length === 0 ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{t('all')}</button>
+      <div className="flex items-center gap-1 text-gray-400 shrink-0 text-sm font-bold"><Filter size={10} /> {t('focus')}:</div>
+      <button onClick={() => toggleTag('ALL')} className={`shrink-0 px-2 py-1 rounded-full text-sm font-bold transition-colors ${filterTags.length === 0 ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{t('all')}</button>
       {uniqueTags.map(tag => (
-        <button key={tag} onClick={() => toggleTag(tag)} className={`shrink-0 px-2 py-1 rounded-full text-[10px] font-bold transition-colors flex items-center gap-1 ${filterTags.includes(tag) ? 'bg-indigo-100 text-indigo-700 ring-1 ring-indigo-500' : 'bg-gray-50 text-gray-600 border border-gray-100'}`}>#{tag}{filterTags.includes(tag) && <XCircle size={10} />}</button>
+        <button key={tag} onClick={() => toggleTag(tag)} className={`shrink-0 px-2 py-1 rounded-full text-sm font-bold transition-colors flex items-center gap-1 ${filterTags.includes(tag) ? 'bg-indigo-100 text-indigo-700 ring-1 ring-indigo-500' : 'bg-gray-50 text-gray-600 border border-gray-100'}`}>#{tag}{filterTags.includes(tag) && <XCircle size={10} />}</button>
       ))}
     </div>
   );
@@ -448,12 +448,12 @@ const ProfileModal = ({ user, logs, onClose, onLinkGoogle, onEmailAuth, onSignOu
         <div className="flex flex-col items-center mb-6">
           <Shield size={40} className="text-indigo-600 mb-2" />
           <h2 className="text-xl font-bold text-gray-800">{t('agentProfile')}</h2>
-          <p className="text-xs text-gray-500">{user.isAnonymous ? t('anonymous') : user.email}</p>
+          <p className="text-sm text-gray-500">{user.isAnonymous ? t('anonymous') : user.email}</p>
         </div>
         <div className="space-y-4">
           <div className="flex gap-2">
-            <button onClick={downloadCSV} className="flex-1 bg-indigo-50 text-indigo-600 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-indigo-100 transition-colors"><Download size={14} /> {t('exportCSV')}</button>
-            <button onClick={() => fileInputRef.current?.click()} className="flex-1 bg-teal-50 text-teal-600 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-teal-100 transition-colors"><Upload size={14} /> {t('importCSV')}</button>
+            <button onClick={downloadCSV} className="flex-1 bg-indigo-50 text-indigo-600 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-indigo-100 transition-colors"><Download size={14} /> {t('exportCSV')}</button>
+            <button onClick={() => fileInputRef.current?.click()} className="flex-1 bg-teal-50 text-teal-600 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-teal-100 transition-colors"><Upload size={14} /> {t('importCSV')}</button>
             <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".csv" className="hidden" />
           </div>
 
@@ -461,13 +461,13 @@ const ProfileModal = ({ user, logs, onClose, onLinkGoogle, onEmailAuth, onSignOu
             {user.isAnonymous ? (
               <>
                 <div className="flex p-1 bg-gray-100 rounded-lg mb-3">
-                  <button onClick={() => { setMode('google'); setAuthError('') }} className={`flex-1 py-1.5 text-xs font-bold rounded-md ${mode === 'google' ? 'bg-white shadow' : 'text-gray-400'}`}>Google</button>
-                  <button onClick={() => { setMode('email'); setAuthError('') }} className={`flex-1 py-1.5 text-xs font-bold rounded-md ${mode === 'email' ? 'bg-white shadow' : 'text-gray-400'}`}>{t('accountPassword')}</button>
+                  <button onClick={() => { setMode('google'); setAuthError('') }} className={`flex-1 py-1.5 text-sm font-bold rounded-md ${mode === 'google' ? 'bg-white shadow' : 'text-gray-400'}`}>Google</button>
+                  <button onClick={() => { setMode('email'); setAuthError('') }} className={`flex-1 py-1.5 text-sm font-bold rounded-md ${mode === 'email' ? 'bg-white shadow' : 'text-gray-400'}`}>{t('accountPassword')}</button>
                 </div>
-                {authError && <div className="p-2 mb-3 bg-red-50 text-red-600 text-[10px] rounded-lg">{authError}</div>}
-                {mode === 'google' ? <button onClick={onLinkGoogle} className="w-full bg-white border py-2 rounded-xl text-xs">{t('googleArchive')}</button> : <div className="space-y-2"><input type="email" placeholder={t('email')} className="w-full border p-2 rounded text-xs" value={localEmail} onChange={e => setLocalEmail(e.target.value)} /><input type="password" placeholder={t('password')} className="w-full border p-2 rounded text-xs" value={localPassword} onChange={e => setLocalPassword(e.target.value)} /><button onClick={() => onEmailAuth(localEmail, localPassword, false)} className="w-full bg-indigo-600 text-white py-2 rounded text-xs">{t('registerBind')}</button></div>}
+                {authError && <div className="p-2 mb-3 bg-red-50 text-red-600 text-sm rounded-lg">{authError}</div>}
+                {mode === 'google' ? <button onClick={onLinkGoogle} className="w-full bg-white border py-2 rounded-xl text-sm">{t('googleArchive')}</button> : <div className="space-y-2"><input type="email" placeholder={t('email')} className="w-full border p-2 rounded text-sm" value={localEmail} onChange={e => setLocalEmail(e.target.value)} /><input type="password" placeholder={t('password')} className="w-full border p-2 rounded text-sm" value={localPassword} onChange={e => setLocalPassword(e.target.value)} /><button onClick={() => onEmailAuth(localEmail, localPassword, false)} className="w-full bg-indigo-600 text-white py-2 rounded text-sm">{t('registerBind')}</button></div>}
               </>
-            ) : <button onClick={onSignOut} className="w-full bg-gray-50 py-2 rounded text-xs">{t('signOut')}</button>}
+            ) : <button onClick={onSignOut} className="w-full bg-gray-50 py-2 rounded text-sm">{t('signOut')}</button>}
           </div>
         </div>
       </div>
@@ -481,7 +481,7 @@ const FlowChannelChart = ({ logs, threshold, t }) => {
   const size = 300; const t_px = (threshold / 10) * size;
   return (
     <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm animate-fade-in relative">
-      <div className="absolute top-2 left-2 text-[10px] text-gray-400 font-bold bg-white/80 px-2 rounded backdrop-blur-sm z-10 border border-gray-100">{t('flowChannel')}</div>
+      <div className="absolute top-2 left-2 text-sm text-gray-400 font-bold bg-white/80 px-2 rounded backdrop-blur-sm z-10 border border-gray-100">{t('flowChannel')}</div>
       <div className="relative" style={{ width: '100%', paddingBottom: '100%' }}>
         <svg viewBox={`0 0 ${size} ${size}`} className="absolute inset-0 w-full h-full overflow-hidden rounded-lg border border-gray-100" shapeRendering="geometricPrecision">
           <rect width={size} height={size} fill="#fef3c7" opacity="0.1" />
@@ -500,8 +500,8 @@ const FlowChannelChart = ({ logs, threshold, t }) => {
             return <circle key={log.id} cx={x} cy={y} r={r} fill={fill} stroke={fill} strokeWidth={1} fillOpacity={0.6}><title>{safeRender(log.activity)}</title></circle>;
           })}
         </svg>
-        <div className="absolute left-1 top-1/2 -rotate-90 text-[9px] text-gray-400 font-bold">{t('challenge')}</div>
-        <div className="absolute bottom-1 left-1/2 text-[9px] text-gray-400 font-bold">{t('skill')}</div>
+        <div className="absolute left-1 top-1/2 -rotate-90 text-xs text-gray-400 font-bold">{t('challenge')}</div>
+        <div className="absolute bottom-1 left-1/2 text-xs text-gray-400 font-bold">{t('skill')}</div>
       </div>
     </div>
   );
@@ -519,7 +519,7 @@ const FoggBehaviorChart = ({ logs, bias, t }) => {
 
   return (
     <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm animate-fade-in relative">
-      <div className="absolute top-2 left-2 text-[10px] text-gray-400 font-bold bg-white/80 px-2 rounded backdrop-blur-sm z-10 border border-gray-100">{t('foggModel')}</div>
+      <div className="absolute top-2 left-2 text-sm text-gray-400 font-bold bg-white/80 px-2 rounded backdrop-blur-sm z-10 border border-gray-100">{t('foggModel')}</div>
       <div className="relative" style={{ width: '100%', paddingBottom: '100%' }}>
         <svg viewBox={`0 0 ${size} ${size}`} className="absolute inset-0 w-full h-full overflow-hidden rounded-lg border border-gray-100" shapeRendering="geometricPrecision">
           <line x1={size / 2} y1="0" x2={size / 2} y2={size} stroke="#cbd5e1" strokeWidth="1" strokeDasharray="4" />
@@ -536,8 +536,8 @@ const FoggBehaviorChart = ({ logs, bias, t }) => {
             return <circle key={log.id} cx={x} cy={y} r={4} fill={fill} stroke="#fff" strokeWidth={1} fillOpacity={0.8}><title>{safeRender(log.activity)}</title></circle>;
           })}
         </svg>
-        <div className="absolute left-[-15px] top-1/2 -rotate-90 text-[9px] text-gray-400 font-bold">{t('motivation')}</div>
-        <div className="absolute bottom-[-15px] left-1/2 text-[9px] text-gray-400 font-bold">{t('ability')}</div>
+        <div className="absolute left-[-15px] top-1/2 -rotate-90 text-xs text-gray-400 font-bold">{t('motivation')}</div>
+        <div className="absolute bottom-[-15px] left-1/2 text-xs text-gray-400 font-bold">{t('ability')}</div>
       </div>
     </div>
   );
@@ -550,24 +550,24 @@ const TimeDistortionChart = ({ logs, t }) => {
   const planLogs = logs.filter(l => l.timePredicted);
   const avgPredicted = planLogs.length > 0 ? planLogs.reduce((acc, l) => acc + (l.timePredicted || 0), 0) / planLogs.length : avgActual;
 
-  if (timeLogs.length === 0 && planLogs.length === 0) return <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm text-center"><Clock size={32} className="mx-auto text-gray-300 mb-2" /><p className="text-gray-500 text-xs">{t('noDataShort')}</p></div>;
+  if (timeLogs.length === 0 && planLogs.length === 0) return <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm text-center"><Clock size={32} className="mx-auto text-gray-300 mb-2" /><p className="text-gray-500 text-sm">{t('noDataShort')}</p></div>;
 
   const distortion = avgActual > 0 ? avgPerceived / avgActual : 1;
   const predictionError = avgActual > 0 ? (avgActual - avgPredicted) / avgActual : 0;
 
   return (
     <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm animate-fade-in">
-      <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wider mb-4 flex items-center gap-2"><Clock size={14} /> {t('timeLab')}</h3>
+      <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider mb-4 flex items-center gap-2"><Clock size={14} /> {t('timeLab')}</h3>
 
       <div className="flex items-end justify-around h-32 pb-6 relative">
-        <div className="flex flex-col items-center w-1/4 group"><div className="w-full bg-teal-200 rounded-t-lg transition-all relative" style={{ height: `${Math.min((avgPredicted / (avgActual || 1)) * 50, 100)}%` }}></div><span className="text-[10px] font-bold text-teal-600 mt-2">{t('predicted')}</span><span className="text-[9px] text-gray-400">{avgPredicted.toFixed(0)}m</span></div>
-        <div className="flex flex-col items-center w-1/4 group"><div className="w-full bg-slate-300 rounded-t-lg relative" style={{ height: '50%' }}></div><span className="text-[10px] font-bold text-slate-600 mt-2">{t('actual')}</span><span className="text-[9px] text-gray-400">{avgActual.toFixed(0)}m</span></div>
-        <div className="flex flex-col items-center w-1/4 group"><div className={`w-full rounded-t-lg transition-all relative ${distortion < 0.9 ? 'bg-green-400' : (distortion > 1.1 ? 'bg-red-400' : 'bg-orange-300')}`} style={{ height: `${Math.min((avgPerceived / (avgActual || 1)) * 50, 100)}%` }}></div><span className="text-[10px] font-bold text-orange-600 mt-2">{t('perceived')}</span><span className="text-[9px] text-gray-400">{avgPerceived.toFixed(0)}m</span></div>
+        <div className="flex flex-col items-center w-1/4 group"><div className="w-full bg-teal-200 rounded-t-lg transition-all relative" style={{ height: `${Math.min((avgPredicted / (avgActual || 1)) * 50, 100)}%` }}></div><span className="text-sm font-bold text-teal-600 mt-2">{t('predicted')}</span><span className="text-xs text-gray-400">{avgPredicted.toFixed(0)}m</span></div>
+        <div className="flex flex-col items-center w-1/4 group"><div className="w-full bg-slate-300 rounded-t-lg relative" style={{ height: '50%' }}></div><span className="text-sm font-bold text-slate-600 mt-2">{t('actual')}</span><span className="text-xs text-gray-400">{avgActual.toFixed(0)}m</span></div>
+        <div className="flex flex-col items-center w-1/4 group"><div className={`w-full rounded-t-lg transition-all relative ${distortion < 0.9 ? 'bg-green-400' : (distortion > 1.1 ? 'bg-red-400' : 'bg-orange-300')}`} style={{ height: `${Math.min((avgPerceived / (avgActual || 1)) * 50, 100)}%` }}></div><span className="text-sm font-bold text-orange-600 mt-2">{t('perceived')}</span><span className="text-xs text-gray-400">{avgPerceived.toFixed(0)}m</span></div>
       </div>
 
       <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-gray-50">
-        <div className="text-[9px] text-gray-500"><b>{t('planDeviation')}:</b> {predictionError > 0.1 ? `${t('underestimated')} ${(predictionError * 100).toFixed(0)}%` : (predictionError < -0.1 ? `${t('overestimated')} ${Math.abs(predictionError * 100).toFixed(0)}%` : t('accurate'))}</div>
-        <div className="text-[9px] text-gray-500 text-right"><b>{t('distortionRate')}:</b> {distortion.toFixed(2)}x</div>
+        <div className="text-xs text-gray-500"><b>{t('planDeviation')}:</b> {predictionError > 0.1 ? `${t('underestimated')} ${(predictionError * 100).toFixed(0)}%` : (predictionError < -0.1 ? `${t('overestimated')} ${Math.abs(predictionError * 100).toFixed(0)}%` : t('accurate'))}</div>
+        <div className="text-xs text-gray-500 text-right"><b>{t('distortionRate')}:</b> {distortion.toFixed(2)}x</div>
       </div>
     </div>
   );
@@ -575,7 +575,7 @@ const TimeDistortionChart = ({ logs, t }) => {
 
 const PredictionAccuracyChart = ({ logs, filterTag, t }) => {
   const completedPlans = logs.filter(l => l.status === 'completed' && l.diffChallenge !== undefined);
-  if (completedPlans.length === 0) return <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm text-center"><Target size={32} className="mx-auto text-gray-300 mb-2" /><p className="text-gray-500 text-xs">{t('noDataShort')}</p></div>;
+  if (completedPlans.length === 0) return <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm text-center"><Target size={32} className="mx-auto text-gray-300 mb-2" /><p className="text-gray-500 text-sm">{t('noDataShort')}</p></div>;
 
   const avgDiffC = completedPlans.reduce((acc, l) => acc + (l.diffChallenge || 0), 0) / completedPlans.length;
   const avgDiffS = completedPlans.reduce((acc, l) => acc + (l.diffSkill || 0), 0) / completedPlans.length;
@@ -583,7 +583,7 @@ const PredictionAccuracyChart = ({ logs, filterTag, t }) => {
 
   const Bar = ({ label, val, color }) => (
     <div className="flex items-center gap-2 mb-3">
-      <span className="text-[10px] font-bold w-12 text-right text-gray-500">{label}</span>
+      <span className="text-sm font-bold w-12 text-right text-gray-500">{label}</span>
       <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden flex items-center relative">
         <div className="absolute left-1/2 w-0.5 h-full bg-slate-300 z-10"></div>
         <div
@@ -594,7 +594,7 @@ const PredictionAccuracyChart = ({ logs, filterTag, t }) => {
           }}
         ></div>
       </div>
-      <span className={`text-[10px] font-mono font-bold w-16 text-right ${val > 0.1 ? 'text-red-500' : (val < -0.1 ? 'text-green-500' : 'text-gray-400')}`}>
+      <span className={`text-sm font-mono font-bold w-16 text-right ${val > 0.1 ? 'text-red-500' : (val < -0.1 ? 'text-green-500' : 'text-gray-400')}`}>
         {Math.abs(val) < 0.1 ? t('accurate') : (val > 0 ? `${t('underestimated')}${val.toFixed(1)}` : `${t('overestimated')}${Math.abs(val).toFixed(1)}`)}
       </span>
     </div>
@@ -602,11 +602,11 @@ const PredictionAccuracyChart = ({ logs, filterTag, t }) => {
 
   return (
     <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm animate-fade-in">
-      <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wider mb-4 flex items-center gap-2"><Target size={14} /> {t('predictionBias')}</h3>
+      <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider mb-4 flex items-center gap-2"><Target size={14} /> {t('predictionBias')}</h3>
       <Bar label={t('challenge')} val={avgDiffC} color={avgDiffC > 0 ? 'bg-red-400' : 'bg-orange-400'} />
       <Bar label={t('skill')} val={avgDiffS} color={avgDiffS > 0 ? 'bg-green-400' : 'bg-red-400'} />
       <Bar label={t('motivation')} val={avgDiffM} color={avgDiffM > 0 ? 'bg-green-400' : 'bg-red-400'} />
-      <div className="mt-2 text-[9px] text-gray-500 text-center italic">
+      <div className="mt-2 text-xs text-gray-500 text-center italic">
         {Math.abs(avgDiffC) < 0.5 && Math.abs(avgDiffS) < 0.5 ? t('selfAwarenessMatch') : t('deviationLarge')}
       </div>
     </div>
@@ -666,8 +666,8 @@ const AISummary = ({ logs, t }) => {
 
   return (
     <div className="bg-gradient-to-r from-slate-800 to-indigo-900 p-4 rounded-xl border border-indigo-800 mt-4 text-indigo-100 shadow-lg">
-      <h3 className="text-xs font-bold text-white flex items-center gap-1 mb-2"><Sparkles size={12} className="text-yellow-400" /> {t('sherlockMind')}</h3>
-      <div className="text-[10px] leading-relaxed space-y-2">
+      <h3 className="text-sm font-bold text-white flex items-center gap-1 mb-2"><Sparkles size={12} className="text-yellow-400" /> {t('sherlockMind')}</h3>
+      <div className="text-sm leading-relaxed space-y-2">
         {advice.map((text, i) => <p key={i}>{text}</p>)}
       </div>
     </div>
@@ -691,14 +691,14 @@ const TagAnalysis = ({ logs, t }) => { /* ... Same ... */
   })).sort((a, b) => b.count - a.count).slice(0, 5);
   return (
     <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm mt-4 animate-fade-in">
-      <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wider mb-4 flex items-center gap-2"><Search size={14} /> {t('behaviorProfile')}</h3>
+      <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider mb-4 flex items-center gap-2"><Search size={14} /> {t('behaviorProfile')}</h3>
       <div className="space-y-3">
-        {sortedTags.length === 0 ? <p className="text-xs text-gray-400 italic text-center py-4">{t('noDataShort')}</p> : sortedTags.map((item) => (
-          <div key={item.tag} className={`flex items-center justify-between text-xs border-b border-gray-50 pb-2 last:border-0`}>
+        {sortedTags.length === 0 ? <p className="text-sm text-gray-400 italic text-center py-4">{t('noDataShort')}</p> : sortedTags.map((item) => (
+          <div key={item.tag} className={`flex items-center justify-between text-sm border-b border-gray-50 pb-2 last:border-0`}>
             <div className="flex items-center gap-2"><span className={`px-2 py-1 rounded-md font-bold bg-indigo-50 text-indigo-700`}>#{item.tag}</span><span className="text-gray-400">x{item.count}</span></div>
             <div className="flex gap-3 text-right">
-              <div><span className="block font-bold text-gray-700">{t('state' + item.topStateId) || item.topStateId}</span><span className="text-[9px] text-gray-400">{t('highFreqState')}</span></div>
-              <div><span className={`block font-bold ${item.avgMot > 6 ? 'text-green-600' : 'text-gray-500'}`}>{item.avgMot}</span><span className="text-[9px] text-gray-400">{t('avgMotivation')}</span></div>
+              <div><span className="block font-bold text-gray-700">{t('state' + item.topStateId) || item.topStateId}</span><span className="text-xs text-gray-400">{t('highFreqState')}</span></div>
+              <div><span className={`block font-bold ${item.avgMot > 6 ? 'text-green-600' : 'text-gray-500'}`}>{item.avgMot}</span><span className="text-xs text-gray-400">{t('avgMotivation')}</span></div>
             </div>
           </div>
         ))}
@@ -713,10 +713,10 @@ const StatsDashboard = ({ logs, uniqueTags, filterTags, setFilterTags, personalF
     <div className="space-y-4 animate-fade-in">
       <FilterBar uniqueTags={uniqueTags} filterTags={filterTags} setFilterTags={setFilterTags} t={t} />
       <div className="flex justify-center mb-2 bg-gray-100 p-1 rounded-lg">
-        <button onClick={() => setView('FLOW')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'FLOW' ? 'bg-white shadow text-indigo-600' : 'text-gray-400'}`}>{t('btnFlow')}</button>
-        <button onClick={() => setView('FOGG')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'FOGG' ? 'bg-white shadow text-indigo-600' : 'text-gray-400'}`}>{t('btnFogg')}</button>
-        <button onClick={() => setView('TIME')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'TIME' ? 'bg-white shadow text-orange-600' : 'text-gray-400'}`}>{t('btnTime')}</button>
-        <button onClick={() => setView('PREDICTION')} className={`px-3 py-1 rounded-md text-[10px] font-bold ${view === 'PREDICTION' ? 'bg-white text-teal-600 shadow' : 'text-gray-400'}`}>{t('btnCalibrate')}</button>
+        <button onClick={() => setView('FLOW')} className={`px-3 py-1 rounded-md text-sm font-bold ${view === 'FLOW' ? 'bg-white shadow text-indigo-600' : 'text-gray-400'}`}>{t('btnFlow')}</button>
+        <button onClick={() => setView('FOGG')} className={`px-3 py-1 rounded-md text-sm font-bold ${view === 'FOGG' ? 'bg-white shadow text-indigo-600' : 'text-gray-400'}`}>{t('btnFogg')}</button>
+        <button onClick={() => setView('TIME')} className={`px-3 py-1 rounded-md text-sm font-bold ${view === 'TIME' ? 'bg-white shadow text-orange-600' : 'text-gray-400'}`}>{t('btnTime')}</button>
+        <button onClick={() => setView('PREDICTION')} className={`px-3 py-1 rounded-md text-sm font-bold ${view === 'PREDICTION' ? 'bg-white text-teal-600 shadow' : 'text-gray-400'}`}>{t('btnCalibrate')}</button>
       </div>
       {view === 'FLOW' && <FlowChannelChart logs={logs} threshold={personalFlowThreshold} t={t} />}
       {view === 'FOGG' && <FoggBehaviorChart logs={logs} bias={personalActionBias} t={t} />}
@@ -731,7 +731,7 @@ const StatsDashboard = ({ logs, uniqueTags, filterTags, setFilterTags, personalF
 // ... LogList (Stable) ...
 const LogList = ({ logs, onDelete, onComplete, t }) => {
   const [expandedId, setExpandedId] = useState(null);
-  if (logs.length === 0) return <div className="text-center text-gray-400 py-10 text-xs">{t('noLogs')}</div>;
+  if (logs.length === 0) return <div className="text-center text-gray-400 py-10 text-sm">{t('noLogs')}</div>;
   return (
     <div className="space-y-3">
       {logs.map(log => {
@@ -760,29 +760,29 @@ const LogList = ({ logs, onDelete, onComplete, t }) => {
                   )}
                 </div>
                 <div>
-                  <span className="font-bold text-gray-800 text-sm block">{safeRender(log.activity)}</span>
-                  <div className="text-[9px] text-gray-400">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                  <span className="font-bold text-gray-800 text-base block">{safeRender(log.activity)}</span>
+                  <div className="text-xs text-gray-400">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                 </div>
               </div>
-              {isPending && <button onClick={(e) => { e.stopPropagation(); onComplete(log) }} className="bg-teal-50 text-teal-600 px-2 py-1 rounded text-xs font-bold">{t('closeCase')}</button>}
+              {isPending && <button onClick={(e) => { e.stopPropagation(); onComplete(log) }} className="bg-teal-50 text-teal-600 px-2 py-1 rounded text-sm font-bold">{t('closeCase')}</button>}
             </div>
             {isExpanded && (
-              <div className="mt-3 pt-2 border-t border-gray-50 text-xs space-y-2 animate-fade-in">
-                <div className="grid grid-cols-3 gap-2 mb-2 text-gray-500 text-[10px]">
+              <div className="mt-3 pt-2 border-t border-gray-50 text-sm space-y-2 animate-fade-in">
+                <div className="grid grid-cols-3 gap-2 mb-2 text-gray-500 text-sm">
                   <div>{t('challenge')}: {log.actualChallenge || log.challenge}</div>
                   <div>{t('skill')}: {log.actualSkill || log.skill}</div>
                   <div>{t('motivation')}: {log.actualMotivation || log.motivation}</div>
                 </div>
                 {/* Time */}
                 {(log.timeActual || log.timePerceived) && (
-                  <div className="flex justify-between bg-gray-50 p-2 rounded text-gray-600 text-[10px] mb-2">
+                  <div className="flex justify-between bg-gray-50 p-2 rounded text-gray-600 text-sm mb-2">
                     <span>{t('actual')}: {log.timeActual || '-'}m</span>
                     <span className={log.timePerceived < log.timeActual ? 'text-green-600 font-bold' : ''}>{t('perceived')}: {log.timePerceived || '-'}m</span>
                     {log.timePredicted && <span className="text-gray-400">{t('predicted')}: {log.timePredicted}m</span>}
                   </div>
                 )}
                 {/* Self Prediction (Safe Check) */}
-                {log.selfPredictedState && <div className="bg-indigo-50 p-2 rounded text-indigo-700 text-[10px] mb-2 font-bold">{t('myHunch')}: {t('state' + log.selfPredictedState.id) || safeRender(log.selfPredictedState.name)}</div>}
+                {log.selfPredictedState && <div className="bg-indigo-50 p-2 rounded text-indigo-700 text-sm mb-2 font-bold">{t('myHunch')}: {t('state' + log.selfPredictedState.id) || safeRender(log.selfPredictedState.name)}</div>}
                 {/* Notes */}
                 {log.planNotes && <div className="bg-teal-50/50 p-2 rounded text-teal-800 mb-1 whitespace-pre-wrap">📅 {safeRender(log.planNotes)}</div>}
                 {log.closingNotes && <div className="bg-indigo-50/50 p-2 rounded text-indigo-800 mb-1 whitespace-pre-wrap">🏁 {safeRender(log.closingNotes)}</div>}
@@ -971,6 +971,8 @@ const FlowDetective = () => {
     if (!isCloudMode) {
       const localData = loadLocalLogs().map(d => sanitizeLog(d.id, d));
       setLogs(localData);
+      // FIX: Set simulated user so UI doesn't spin forever
+      setUser({ uid: 'local-user', isAnonymous: true, email: 'Local Agent' });
       setIsLoadingLogs(false);
       return;
     }
@@ -1247,8 +1249,8 @@ const FlowDetective = () => {
     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-red-50">
       <AlertCircle size={48} className="text-red-500 mb-4" />
       <h2 className="text-lg font-bold text-red-700 mb-2">连接中止 (Connection Terminated)</h2>
-      <p className="text-sm text-red-600 font-mono bg-red-100 p-3 rounded break-all">{authGlobalError}</p>
-      <div className="mt-6 text-xs text-gray-500 max-w-xs text-left space-y-2">
+      <p className="text-base text-red-600 font-mono bg-red-100 p-3 rounded break-all">{authGlobalError}</p>
+      <div className="mt-6 text-sm text-gray-500 max-w-xs text-left space-y-2">
         <p><strong>可能原因 / Possible Causes:</strong></p>
         <ul className="list-disc pl-4 space-y-1">
           <li>域名未授权 (Domain not authorized in Firebase Console)</li>
@@ -1264,12 +1266,12 @@ const FlowDetective = () => {
       {showProfile && <ProfileModal user={user} logs={logs} onClose={() => setShowProfile(false)} onLinkGoogle={handleLinkGoogle} onEmailAuth={handleEmailAuth} onSignOut={handleSignOut} authError={authError} setAuthError={setAuthError} isCloudMode={isCloudMode} onImportCSV={handleImportCSV} t={t} />}
 
       <div className="bg-slate-900 p-6 pt-10 rounded-b-3xl shadow-xl relative z-10 text-white flex justify-between items-center">
-        <div><h1 className="text-xl font-bold">Flow Detective 32.3</h1><p className="text-[10px] text-slate-400">Local First</p></div>
+        <div><h1 className="text-xl font-bold">Flow Detective 32.5</h1><p className="text-sm text-slate-400">Local First</p></div>
         <div className="flex gap-2 items-center">
-          {!isCloudMode && <span className="text-[9px] bg-orange-500/20 text-orange-200 px-2 py-0.5 rounded border border-orange-500/30">{t('localDemoTag')}</span>}
+          {!isCloudMode && <span className="text-xs bg-orange-500/20 text-orange-200 px-2 py-0.5 rounded border border-orange-500/30">{t('localDemoTag')}</span>}
           <button onClick={toggleLang} className="p-2 rounded-full bg-slate-800 ring-1 ring-slate-600 flex items-center justify-center transition-colors">
             <Languages size={18} className="text-white" />
-            <span className="text-[9px] ml-1">{lang === 'zh' ? 'EN' : '中'}</span>
+            <span className="text-xs ml-1">{lang === 'zh' ? 'EN' : '中'}</span>
           </button>
           <button onClick={() => setShowProfile(true)} className={`p-2 rounded-full ring-1 flex items-center justify-center transition-colors ${!user ? 'opacity-50 cursor-not-allowed bg-slate-800 ring-slate-700' : (isCloudMode ? 'bg-indigo-900 ring-indigo-500' : 'bg-orange-900 ring-orange-500')}`}>
             {user ? <User size={20} className="text-white" /> : <Loader2 size={20} className="text-slate-500 animate-spin" />}
@@ -1281,33 +1283,33 @@ const FlowDetective = () => {
         {activeTab === 'log' && (
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <div className="flex justify-between items-center mb-4">
-              <div className="bg-gray-100 p-1 rounded-lg flex gap-1"><button onClick={() => setLogMode('immediate')} className={`px-3 py-1 rounded-md text-[10px] ${logMode === 'immediate' ? 'bg-white shadow' : ''}`}>{t('immediate')}</button><button onClick={() => setLogMode('plan')} className={`px-3 py-1 rounded-md text-[10px] ${logMode === 'plan' ? 'bg-white shadow' : ''}`}>{t('plan')}</button></div>
-              <button onClick={() => setIsDeepDive(!isDeepDive)} className="text-[10px] bg-gray-100 px-2 py-1 rounded-full">{isDeepDive ? 'Pro' : 'Lite'}</button>
+              <div className="bg-gray-100 p-1 rounded-lg flex gap-1"><button onClick={() => setLogMode('immediate')} className={`px-3 py-1 rounded-md text-sm ${logMode === 'immediate' ? 'bg-white shadow' : ''}`}>{t('immediate')}</button><button onClick={() => setLogMode('plan')} className={`px-3 py-1 rounded-md text-sm ${logMode === 'plan' ? 'bg-white shadow' : ''}`}>{t('plan')}</button></div>
+              <button onClick={() => setIsDeepDive(!isDeepDive)} className="text-sm bg-gray-100 px-2 py-1 rounded-full">{isDeepDive ? 'Pro' : 'Lite'}</button>
             </div>
 
             <div className="mb-4">
-              <input type="text" placeholder={t('activityPlaceholder')} className="w-full bg-slate-50 border p-3 rounded-xl text-sm" value={currentActivity} onChange={e => setCurrentActivity(e.target.value)} disabled={logMode === 'completing'} />
+              <input type="text" placeholder={t('activityPlaceholder')} className="w-full bg-slate-50 border p-3 rounded-xl text-base" value={currentActivity} onChange={e => setCurrentActivity(e.target.value)} disabled={logMode === 'completing'} />
               <div className="mt-2">
-                <div className="flex flex-wrap gap-2 mb-2">{tags.map((t, i) => <span key={i} className="text-[9px] bg-indigo-50 px-2 py-1 rounded text-indigo-600">#{safeRender(t)} <button onClick={() => removeTag(t)}>x</button></span>)}
-                  <input type="text" placeholder="+Tag" className="bg-transparent text-[10px]" value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={handleAddTag} />
+                <div className="flex flex-wrap gap-2 mb-2">{tags.map((t, i) => <span key={i} className="text-xs bg-indigo-50 px-2 py-1 rounded text-indigo-600">#{safeRender(t)} <button onClick={() => removeTag(t)}>x</button></span>)}
+                  <input type="text" placeholder="+Tag" className="bg-transparent text-sm" value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={handleAddTag} />
                 </div>
                 <div className="flex gap-1 overflow-x-auto pb-1 no-scrollbar opacity-70">
-                  {uniqueTags.filter(t => !tags.includes(t)).slice(0, 5).map(t => (<button key={t} onClick={() => addHistoricalTag(t)} className="text-[9px] border px-2 py-0.5 rounded-full text-gray-400 hover:bg-gray-50">+{safeRender(t)}</button>))}
+                  {uniqueTags.filter(t => !tags.includes(t)).slice(0, 5).map(t => (<button key={t} onClick={() => addHistoricalTag(t)} className="text-xs border px-2 py-0.5 rounded-full text-gray-400 hover:bg-gray-50">+{safeRender(t)}</button>))}
                 </div>
               </div>
-              <div className="flex mt-2 gap-2"><button onClick={toggleVoiceInput} className={`text-[10px] border px-2 py-1 rounded ${isListening ? 'bg-red-50 text-red-500' : ''}`}>{isListening ? 'Stop' : 'Voice'}</button>
-                <textarea placeholder={logMode === 'plan' ? t('planNotesPlaceholder') : t('obsNotesPlaceholder')} className="w-full bg-transparent border p-2 text-xs rounded" value={notes} onChange={e => setNotes(e.target.value)} /></div>
+              <div className="flex mt-2 gap-2"><button onClick={toggleVoiceInput} className={`text-sm border px-2 py-1 rounded ${isListening ? 'bg-red-50 text-red-500' : ''}`}>{isListening ? 'Stop' : 'Voice'}</button>
+                <textarea placeholder={logMode === 'plan' ? t('planNotesPlaceholder') : t('obsNotesPlaceholder')} className="w-full bg-transparent border p-2 text-sm rounded" value={notes} onChange={e => setNotes(e.target.value)} /></div>
             </div>
 
             {/* Self-Prediction */}
             {logMode === 'plan' && (
               <div className="mb-4 p-3 bg-teal-50/50 rounded-xl border border-teal-100">
-                <h4 className="text-[10px] font-bold text-teal-700 uppercase mb-2 flex items-center gap-1"><Eye size={12} /> {t('myHunch')}</h4>
+                <h4 className="text-sm font-bold text-teal-700 uppercase mb-2 flex items-center gap-1"><Eye size={12} /> {t('myHunch')}</h4>
                 <div className="flex gap-2 justify-around">
                   {[FLOW_STATES.FLOW, FLOW_STATES.ANXIETY, FLOW_STATES.BOREDOM, FLOW_STATES.APATHY].map(s => (
                     <button key={s.id} onClick={() => setSelfPredictedState(s)} className={`flex flex-col items-center p-2 rounded-lg border ${selfPredictedState?.id === s.id ? 'bg-white shadow border-teal-300' : 'border-transparent opacity-50'}`}>
                       <s.icon size={16} className={s.color} />
-                      <span className="text-[8px] mt-1">{t('state' + s.id).split(' ')[0]}</span>
+                      <span className="text-xs mt-1">{t('state' + s.id).split(' ')[0]}</span>
                     </button>
                   ))}
                 </div>
@@ -1317,15 +1319,15 @@ const FlowDetective = () => {
             {isDeepDive && (
               <div className="mb-6 space-y-4 border-b border-dashed border-gray-200 pb-4">
                 <div className="bg-purple-50/50 p-3 rounded-xl border border-purple-100">
-                  <h4 className="text-[10px] font-bold text-purple-700 uppercase mb-2">{t('psychProfile')}</h4>
+                  <h4 className="text-sm font-bold text-purple-700 uppercase mb-2">{t('psychProfile')}</h4>
                   <Slider label={t('emotion')} value={emotion} setValue={setEmotion} minLabel="-" maxLabel="+" colorClass="text-purple-600" isSub />
                   <Slider label={t('entropy')} value={entropy} setValue={setEntropy} minLabel="Chaos" maxLabel="Order" colorClass="text-purple-600" isSub />
                 </div>
                 <div className="bg-orange-50/50 p-3 rounded-xl border border-orange-100">
-                  <h4 className="text-[10px] font-bold text-orange-700 uppercase mb-2">{t('timeLab')}</h4>
+                  <h4 className="text-sm font-bold text-orange-700 uppercase mb-2">{t('timeLab')}</h4>
                   <div className="grid grid-cols-3 gap-2">
-                    <div><label className="text-[9px] text-gray-500 block">{t('predicted')}</label><input type="number" className="w-full bg-white border border-orange-200 rounded p-1 text-xs text-center" value={timePredicted} onChange={e => setTimePredicted(e.target.value)} /></div>
-                    {logMode !== 'plan' && (<><div><label className="text-[9px] text-gray-500 block">{t('actual')}</label><input type="number" className="w-full bg-white border border-orange-200 rounded p-1 text-xs text-center" value={timeActual} onChange={e => setTimeActual(e.target.value)} /></div><div><label className="text-[9px] text-gray-500 block">{t('perceived')}</label><input type="number" className="w-full bg-white border border-orange-200 rounded p-1 text-xs text-center" value={timePerceived} onChange={e => setTimePerceived(e.target.value)} /></div></>)}
+                    <div><label className="text-xs text-gray-500 block">{t('predicted')}</label><input type="number" className="w-full bg-white border border-orange-200 rounded p-1 text-sm text-center" value={timePredicted} onChange={e => setTimePredicted(e.target.value)} /></div>
+                    {logMode !== 'plan' && (<><div><label className="text-xs text-gray-500 block">{t('actual')}</label><input type="number" className="w-full bg-white border border-orange-200 rounded p-1 text-sm text-center" value={timeActual} onChange={e => setTimeActual(e.target.value)} /></div><div><label className="text-xs text-gray-500 block">{t('perceived')}</label><input type="number" className="w-full bg-white border border-orange-200 rounded p-1 text-sm text-center" value={timePerceived} onChange={e => setTimePerceived(e.target.value)} /></div></>)}
                   </div>
                 </div>
               </div>
@@ -1340,11 +1342,11 @@ const FlowDetective = () => {
                 {isDeepDive && <div className="pl-4"><Slider label={t('intrinsic')} value={motivationIntrinsic} setValue={setMotivationIntrinsic} isSub /><Slider label={t('extrinsic')} value={motivationExtrinsic} setValue={setMotivationExtrinsic} isSub /></div>}</div>
             </div>
 
-            <div className="mt-4 p-3 bg-slate-50 rounded-xl text-xs flex justify-between">
+            <div className="mt-4 p-3 bg-slate-50 rounded-xl text-sm flex justify-between">
               <div className="flex gap-2 items-center"><finalFlowState.icon size={16} className={finalFlowState.color} /><span className={`font-bold ${finalFlowState.color}`}>{t('state' + finalFlowState.id)}</span></div>
-              <div className="flex gap-2 items-center"><span className={`font-bold ${finalActionState.isActionable ? 'text-green-600' : 'text-gray-500'}`}>{finalActionState.label}</span>{!isCalibrating && logMode !== 'plan' && <button onClick={() => setIsCalibrating(true)} className="text-[9px] underline">{t('correction')}</button>}{isCalibrating && <div className="flex gap-1"><button onClick={() => setManualFlowState(FLOW_STATES.ANXIETY)} className="p-1 bg-red-100 rounded text-red-600"><Activity size={10} /></button><button onClick={() => setManualFlowState(FLOW_STATES.FLOW)} className="p-1 bg-green-100 rounded text-green-600"><Zap size={10} /></button><button onClick={() => setManualFlowState(FLOW_STATES.BOREDOM)} className="p-1 bg-yellow-100 rounded text-yellow-600"><Coffee size={10} /></button></div>}</div>
+              <div className="flex gap-2 items-center"><span className={`font-bold ${finalActionState.isActionable ? 'text-green-600' : 'text-gray-500'}`}>{finalActionState.label}</span>{!isCalibrating && logMode !== 'plan' && <button onClick={() => setIsCalibrating(true)} className="text-xs underline">{t('correction')}</button>}{isCalibrating && <div className="flex gap-1"><button onClick={() => setManualFlowState(FLOW_STATES.ANXIETY)} className="p-1 bg-red-100 rounded text-red-600"><Activity size={10} /></button><button onClick={() => setManualFlowState(FLOW_STATES.FLOW)} className="p-1 bg-green-100 rounded text-green-600"><Zap size={10} /></button><button onClick={() => setManualFlowState(FLOW_STATES.BOREDOM)} className="p-1 bg-yellow-100 rounded text-yellow-600"><Coffee size={10} /></button></div>}</div>
             </div>
-            <button onClick={handleLog} disabled={!currentActivity || isSubmitting} className="w-full mt-4 bg-slate-800 text-white py-3 rounded-xl text-sm font-bold flex justify-center items-center gap-2">
+            <button onClick={handleLog} disabled={!currentActivity || isSubmitting} className="w-full mt-4 bg-slate-800 text-white py-3 rounded-xl text-base font-bold flex justify-center items-center gap-2">
               {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : (showSuccess ? t('saved') : (logMode === 'plan' ? t('addToTodo') : t('recordCase')))}
             </button>
           </div>
@@ -1363,7 +1365,7 @@ const FlowDetective = () => {
       </div>
 
       {/* Debug Footer */}
-      <div className="fixed bottom-16 left-0 right-0 text-[8px] text-gray-300 text-center pointer-events-none z-40">
+      <div className="fixed bottom-16 left-0 right-0 text-xs text-gray-300 text-center pointer-events-none z-40">
         UID: {user ? user.uid.slice(0, 6) + '...' : 'No User'} | Ver: 32.3
         {authGlobalError && <div className="text-red-400 bg-white/90 p-1">{authGlobalError}</div>}
       </div>
